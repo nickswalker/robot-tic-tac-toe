@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="condition" default="0"/>
+
+  <node name="game_state_detector" pkg="tic_tac_toe" type="game_state_detector" required="true" />
+  <node name="action_executor" pkg="tic_tac_toe" type="action_executor" required="true" />
+  <node name="interaction_manager" pkg="tic_tac_toe" type="interaction_manager" required="true" />
+</launch>
+
