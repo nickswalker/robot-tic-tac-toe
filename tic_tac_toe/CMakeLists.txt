@@ -108,8 +108,6 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-
   CATKIN_DEPENDS geometry_msgs roscpp rospy sensor_msgs std_msgs
   #DEPENDS system_lib
 )
@@ -136,8 +134,10 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(game_state_detector src/game_state_detector.cpp)
+add_dependencies(game_state_detector tic_tac_toe_generate_messages_cpp)
 target_link_libraries(game_state_detector ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(action_executor src/action_executor.cpp)
+add_dependencies(action_executor tic_tac_toe_generate_messages_cpp)
 target_link_libraries(action_executor ${catkin_LIBRARIES})
 
