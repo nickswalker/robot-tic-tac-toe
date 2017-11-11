@@ -103,6 +103,52 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request  &req,
   return true;
 }
 
+
+geometry_msgs::PoseStamped point(int8_t grid_square)
+{
+  geometry_msgs::PoseStamped p_target;
+ 
+  p_target.header.frame_id = "m1n6s200_link_base";
+
+  switch(grid_square){
+    case(0): {
+      p_target.pose.position.x = 0.429870784283;
+      p_target.pose.position.y = 0.274502158165;
+      p_target.pose.position.z = 0.0205389931798;
+      p_target.pose.orientation.x = -0.735577583313;
+      p_target.pose.orientation.y = -0.660595536232;
+      p_target.pose.orientation.z = -0.142605945468;
+      p_target.pose.orientation.w = -0.0469318404794;
+      break;
+    }
+    case(1): {
+      break;
+    }
+    case(2): {
+      break;
+    }
+    case(3): {
+      break;
+    }
+    case(4): {
+      break;
+    }
+    case(5): {
+      break;
+    }
+    case(6): {
+      break;
+    }
+    case(7): {
+      break;
+    }
+  }
+   
+  return p_target;
+
+}
+
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "action_executor");
@@ -131,39 +177,12 @@ int main(int argc, char **argv)
   geometry_msgs::PoseStamped p_target;
   // Pose with the end effector pointing straight up, with palm parallel with the frame of the robot
   p_target.header.frame_id = "m1n6s200_link_base";
-  p_target.pose.position.x = 0.00;
-  p_target.pose.position.y = -0.05;
-  p_target.pose.position.z = 0.97;
-  p_target.pose.orientation.x = 0.0;
-  p_target.pose.orientation.y = 0.00;
-  p_target.pose.orientation.z = -0.73;
-  p_target.pose.orientation.w = 0.68;
-  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
-  
-  // Pose with end effector pointing straight left, with palm parallel with the frame of the robot
-  pressEnter("Press enter...");
-  p_target.pose.position.x = 0.00;
-  p_target.pose.position.y = 0.40;
-  p_target.pose.position.z = 0.50;
-  p_target.pose.orientation.x = -0.50;
-  p_target.pose.orientation.y = -0.50;
-  p_target.pose.orientation.z = -0.50;
-  p_target.pose.orientation.w = 0.5;
-  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
-  
-  // Pose with end effector pointing straight right, with palm parallel with the frame of the robot
-  pressEnter("Press enter...");
-  p_target.pose.position.x = 0.00;
-  p_target.pose.position.y = -0.40;
-  p_target.pose.position.z = 0.50;
-  p_target.pose.orientation.x = 0.00;
-  p_target.pose.orientation.y = 0.50;
-  p_target.pose.orientation.z = -0.50;
-  p_target.pose.orientation.w = 0.5;
-  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
-  
+
+  p_target = point(0);
+
   ROS_INFO("Moving to target x=%f, y=%f, z=%f", p_target.pose.position.x, p_target.pose.position.y, p_target.pose.position.z);
-  
+  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
+    
   ros::shutdown();
 
   return 0;
