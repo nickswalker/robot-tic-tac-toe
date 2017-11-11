@@ -17,6 +17,20 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+
+  kinova_msgs
+  moveit_msgs
+  std_msgs
+  actionlib_msgs
+  actionlib
+  moveit_ros_planning_interface
+  moveit_utils
+  moveit_msgs
+  nav_msgs
+  move_base_msgs
+  segbot_arm_perception
+  segbot_arm_manipulation
+  bwi_msgs
 )
 
 
