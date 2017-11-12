@@ -109,12 +109,12 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
   geometry_msgs::PoseStamped p_target;
  
   p_target.header.frame_id = "m1n6s200_link_base";
+  p_target.pose.position.z = 0.02;
 
   switch(grid_square){
     case(0): {
       p_target.pose.position.x = 0.429870784283;
-      p_target.pose.position.y = 0.274502158165;
-      p_target.pose.position.z = 0.0205389931798;
+      p_target.pose.position.y = 0.277002158165;
       p_target.pose.orientation.x = -0.735577583313;
       p_target.pose.orientation.y = -0.660595536232;
       p_target.pose.orientation.z = -0.142605945468;
@@ -124,7 +124,6 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
     case(1): {
       p_target.pose.position.x = 0.416978001595; 
       p_target.pose.position.y = 0.188035085797;
-      p_target.pose.position.z = 0.00995120592415;
       p_target.pose.orientation.x = -0.712904572487; 
       p_target.pose.orientation.y = -0.695405781269;
       p_target.pose.orientation.z = -0.0817181617022;
@@ -134,7 +133,6 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
     case(2): {
       p_target.pose.position.x = 0.41749227047;
       p_target.pose.position.y = 0.0784174501896;
-      p_target.pose.position.z = 0.0100244982168;
       p_target.pose.orientation.x = -0.73127913475;
       p_target.pose.orientation.y = -0.678451240063;
       p_target.pose.orientation.z = -0.0684093385935;
@@ -144,7 +142,6 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
     case(3): {
       p_target.pose.position.x = 0.319933205843;
       p_target.pose.position.y = 0.298095226288;
-      p_target.pose.position.z = 0.0126026282087;
       p_target.pose.orientation.x = -0.728000819683;
       p_target.pose.orientation.y = -0.683962523937;
       p_target.pose.orientation.z = -0.0343066714704;
@@ -154,7 +151,6 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
     case(4): {
       p_target.pose.position.x = 0.32172358036;
       p_target.pose.position.y = 0.192896842957;
-      p_target.pose.position.z = 0.0174123551697;
       p_target.pose.orientation.x = -0.739264786243;
       p_target.pose.orientation.y = -0.670717418194;
       p_target.pose.orientation.z = -0.0416212826967;
@@ -164,7 +160,6 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
     case(5): {
       p_target.pose.position.x = 0.320281594992;
       p_target.pose.position.y = 0.0820605158806;
-      p_target.pose.position.z = 0.00718613155186;
       p_target.pose.orientation.x = -0.734941363335;
       p_target.pose.orientation.y = -0.676072537899;
       p_target.pose.orientation.z = -0.0153863821179;
@@ -172,19 +167,17 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
       break;
     }
     case(6): {
-      p_target.pose.position.x = 0.320281594992;
-      p_target.pose.position.y = 0.0820605158806;
-      p_target.pose.position.z = 0.00718613155186;
-      p_target.pose.orientation.x = -0.734941363335; 
-      p_target.pose.orientation.y = -0.676072537899;
-      p_target.pose.orientation.z = -0.0153863821179;
-      p_target.pose.orientation.w = 0.0505022183061;
+      p_target.pose.position.x = 0.193733692169;
+      p_target.pose.position.y =  0.288643151522;
+      p_target.pose.orientation.x = -0.0211249664426;
+      p_target.pose.orientation.y = -0.988549888134;
+      p_target.pose.orientation.z = -0.112252391875;
+      p_target.pose.orientation.w = 0.0986009389162;
       break;
     }
     case(7): {
       p_target.pose.position.x = 0.22457306087;
       p_target.pose.position.y = 0.18780374527;
-      p_target.pose.position.z = 0.00730698136613;
       p_target.pose.orientation.x = -0.734695315361;
       p_target.pose.orientation.y = -0.666424036026;
       p_target.pose.orientation.z = -0.0120352953672;
@@ -194,7 +187,6 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
     case(8): {
       p_target.pose.position.x = 0.214110553265;
       p_target.pose.position.y = 0.0770715326071;
-      p_target.pose.position.z = 0.0115216253325;
       p_target.pose.orientation.x = -0.712083637714;
       p_target.pose.orientation.y = -0.686031162739;
       p_target.pose.orientation.z = 0.0380877107382;
@@ -230,13 +222,37 @@ int main(int argc, char **argv)
       
   listenForArmData();
 
+
+  //close fingers 
+  pressEnter("Press [Enter] to close the gripper and go home");
+  kinova_msgs::SetFingersPositionGoal goalFinger;
+  goalFinger.fingers.finger1 = 7000; //100 is open, 7500 is close
+  goalFinger.fingers.finger2 = 7000; 
+
+  ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/m1n6s200_driver/in/home_arm");
+  kinova_msgs::HomeArm srv;
+  if(home_client.call(srv))
+    ROS_INFO("Homing arm");
+  else
+    ROS_INFO("Cannot contact homing service. Is it running?");
+  
   for(int i = 0; i < 9; i++){
-    pressEnter("Press enter...");
+    pressEnter("Press enter");
     geometry_msgs::PoseStamped p_target;
     p_target = point(i);
     ROS_INFO("Moving to target x=%f, y=%f, z=%f", p_target.pose.position.x, p_target.pose.position.y, p_target.pose.position.z);
     segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
   }
+
+  //home arm using service call to arm driver
+  pressEnter("Press [Enter] to go home");
+  home_client = n.serviceClient<kinova_msgs::HomeArm>("/m1n6s200_driver/in/home_arm");
+  if(home_client.call(srv))
+    ROS_INFO("Homing arm");
+  else
+    ROS_INFO("Cannot contact homing service. Is it running?");
+
+
   ros::shutdown();
 
   return 0;
