@@ -3,19 +3,45 @@
 import sys
 import rospy
 import tic_tac_toe.game_agent
+from tic_tac_toe.msg import GameState
 
 from tic_tac_toe.srv import *
 
+from threading import Semaphore, Thread
+from Queue import Queue
+
+state_change_flag = Semaphore(0)
+game_state_queue = Queue()
+state_estimate = None
+
+def game_state_callback(msg):
+    game_state_queue.put(tuple(msg.board_state))
+
+def process_game_state():
+    global state_estimate
+    while not rospy.is_shutdown():
+        next_state = game_state_queue.get(True)
+        if next_state != state_estimate:
+            state_estimate = next_state
+            rospy.loginfo("Detected transition to configuration {}".format(state_estimate))
+            state_change_flag.release()
+            
+
 if __name__ == "__main__":
     rospy.init_node("interaction_manager")
+    rospy.loginfo("Waiting for topics and services...")
     rospy.wait_for_service('execute_game_action')
     executor = rospy.ServiceProxy('execute_game_action', ExecuteGameAction)
-    rospy.spin()
+    rospy.Subscriber("game_state", GameState, game_state_callback)
     
-    # Wait for start signal
-    
-    # Loop:
-    #   Get game state from vision and detect change
-    #   If game is done, end
-    #   Calculate move
-    #   Execute move with current experimental manipulation
+    rospy.loginfo("Ready")
+    state_estimation_thread = Thread(target=process_game_state)
+    state_estimation_thread.start()
+    while not rospy.is_shutdown():
+        
+        # Get game state from vision and detect change
+        state_change_flag.acquire()
+        # If game is done, end
+        # Calculate move
+        move = 0
+        executor(move)

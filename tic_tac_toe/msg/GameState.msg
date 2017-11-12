@@ -1,2 +1,2 @@
-int8[] boardState
+int8[] board_state
 
