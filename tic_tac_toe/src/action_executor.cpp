@@ -198,6 +198,44 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
   return p_target;
 }
 
+void scratch_chin(ros::NodeHandle n)
+{
+  kinova_msgs::SetFingersPositionGoal goalFinger;
+
+  pressEnter("Press [Enter] to scratch chin");
+  
+  // set coordinates for arm
+  geometry_msgs::PoseStamped p_target;
+  p_target.header.frame_id = "m1n6s200_link_base";
+  p_target.pose.position.x = -0.236974254251;
+  p_target.pose.position.y = 0.006457015872;
+  p_target.pose.position.z = 0.640369296074;
+  p_target.pose.orientation.x = -0.645233333111;
+  p_target.pose.orientation.y = 0.0155444145203;
+  p_target.pose.orientation.z = 0.638653099537;
+  p_target.pose.orientation.w = 0.418992251158;
+
+  // move arm to head
+  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
+
+  actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
+  ac.waitForServer();
+
+  for(int i = 0; i < 3; i++){
+    // open hand
+    goalFinger.fingers.finger1 = 100; //100 is open, 7500 is close
+    goalFinger.fingers.finger2 = 100; 
+    ac.sendGoal(goalFinger);
+    ac.waitForResult();
+
+    // close hand
+    goalFinger.fingers.finger1 = 6000; //100 is open, 7500 is close
+    goalFinger.fingers.finger2 = 6000;
+    ac.sendGoal(goalFinger);
+    ac.waitForResult();
+  }
+}
+
 
 int main(int argc, char **argv)
 {
@@ -222,13 +260,19 @@ int main(int argc, char **argv)
       
   listenForArmData();
 
-
-  //close fingers 
-  pressEnter("Press [Enter] to close the gripper and go home");
+  actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
+  ac.waitForServer();
+ 
+  pressEnter("Press [Enter] to close the hand and move home.");
+ 
+  // close the hand
   kinova_msgs::SetFingersPositionGoal goalFinger;
-  goalFinger.fingers.finger1 = 7000; //100 is open, 7500 is close
-  goalFinger.fingers.finger2 = 7000; 
+  goalFinger.fingers.finger1 = 6000; //100 is open, 7500 is close
+  goalFinger.fingers.finger2 = 6000;
+  ac.sendGoal(goalFinger);
+  ac.waitForResult();
 
+  // move to home
   ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/m1n6s200_driver/in/home_arm");
   kinova_msgs::HomeArm srv;
   if(home_client.call(srv))
@@ -236,10 +280,12 @@ int main(int argc, char **argv)
   else
     ROS_INFO("Cannot contact homing service. Is it running?");
   
+  // iterate through all the 9 grid squares.
+  scratch_chin(n);
+
   for(int i = 0; i < 9; i++){
     pressEnter("Press enter");
-    geometry_msgs::PoseStamped p_target;
-    p_target = point(i);
+    geometry_msgs::PoseStamped p_target = point(i);
     ROS_INFO("Moving to target x=%f, y=%f, z=%f", p_target.pose.position.x, p_target.pose.position.y, p_target.pose.position.z);
     segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
   }
