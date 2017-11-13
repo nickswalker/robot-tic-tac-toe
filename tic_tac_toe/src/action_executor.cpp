@@ -109,7 +109,7 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
   geometry_msgs::PoseStamped p_target;
  
   p_target.header.frame_id = "m1n6s200_link_base";
-  p_target.pose.position.z = 0.02;
+  p_target.pose.position.z = 0.01;  // uniform height from table for all positions
 
   switch(grid_square){
     case(0): {
@@ -221,6 +221,8 @@ void scratch_chin(ros::NodeHandle n)
     segbot_arm_manipulation::moveFingers(100,100);
     segbot_arm_manipulation::moveFingers(5500,5500);
   }
+  // move arm back to home
+  segbot_arm_manipulation::homeArm(n);               // move to home
 }
 
 
@@ -256,11 +258,25 @@ int main(int argc, char **argv)
   scratch_chin(n);
  
   // iterate through all the 9 grid squares.
+  bool positions[9] = {};                  // keeps track of random positions that have been chosen                      
   for(int i = 0; i < 9; i++){
+
+    // choose a random position that has not encountered yet
+    int randNum;
+    do{
+      randNum = rand() % 10;
+    } while(positions[randNum] == true);
+    positions[randNum] = true;
+
+    // move to grid coordinate
     pressEnter("Press [Enter] to move to next grid coordinate");
-    geometry_msgs::PoseStamped p_target = point(i);
-    ROS_INFO("Moving to target x=%f, y=%f, z=%f", p_target.pose.position.x, p_target.pose.position.y, p_target.pose.position.z);
+    geometry_msgs::PoseStamped p_target = point(randNum);
+    ROS_INFO("Moving to grid square %d", randNum);
     segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
+
+    // move back home
+    pressEnter("Press [Enter] to move arm back home");
+    segbot_arm_manipulation::homeArm(n);               
   }
 
   //home arm using service call to arm driver
