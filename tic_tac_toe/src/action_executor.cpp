@@ -200,8 +200,6 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
 
 void scratch_chin(ros::NodeHandle n)
 {
-  kinova_msgs::SetFingersPositionGoal goalFinger;
-
   pressEnter("Press [Enter] to scratch chin");
   
   // set coordinates for arm
@@ -218,21 +216,10 @@ void scratch_chin(ros::NodeHandle n)
   // move arm to head
   segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 
-  actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
-  ac.waitForServer();
-
+  // scratch chin
   for(int i = 0; i < 3; i++){
-    // open hand
-    goalFinger.fingers.finger1 = 100; //100 is open, 7500 is close
-    goalFinger.fingers.finger2 = 100; 
-    ac.sendGoal(goalFinger);
-    ac.waitForResult();
-
-    // close hand
-    goalFinger.fingers.finger1 = 6000; //100 is open, 7500 is close
-    goalFinger.fingers.finger2 = 6000;
-    ac.sendGoal(goalFinger);
-    ac.waitForResult();
+    segbot_arm_manipulation::moveFingers(100,100);
+    segbot_arm_manipulation::moveFingers(5500,5500);
   }
 }
 
@@ -260,31 +247,17 @@ int main(int argc, char **argv)
       
   listenForArmData();
 
-  actionlib::SimpleActionClient<kinova_msgs::SetFingersPositionAction> ac("/m1n6s200_driver/fingers_action/finger_positions", true);
-  ac.waitForServer();
+  // close hand and move home
+  pressEnter("Press [Enter] to close the hand and move home."); 
+  segbot_arm_manipulation::moveFingers(5500,5500);   // close the hand
+  segbot_arm_manipulation::homeArm(n);               // move to home
  
-  pressEnter("Press [Enter] to close the hand and move home.");
- 
-  // close the hand
-  kinova_msgs::SetFingersPositionGoal goalFinger;
-  goalFinger.fingers.finger1 = 6000; //100 is open, 7500 is close
-  goalFinger.fingers.finger2 = 6000;
-  ac.sendGoal(goalFinger);
-  ac.waitForResult();
-
-  // move to home
-  ros::ServiceClient home_client = n.serviceClient<kinova_msgs::HomeArm>("/m1n6s200_driver/in/home_arm");
-  kinova_msgs::HomeArm srv;
-  if(home_client.call(srv))
-    ROS_INFO("Homing arm");
-  else
-    ROS_INFO("Cannot contact homing service. Is it running?");
-  
-  // iterate through all the 9 grid squares.
+  // scratch chin  
   scratch_chin(n);
-
+ 
+  // iterate through all the 9 grid squares.
   for(int i = 0; i < 9; i++){
-    pressEnter("Press enter");
+    pressEnter("Press [Enter] to move to next grid coordinate");
     geometry_msgs::PoseStamped p_target = point(i);
     ROS_INFO("Moving to target x=%f, y=%f, z=%f", p_target.pose.position.x, p_target.pose.position.y, p_target.pose.position.z);
     segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
@@ -292,13 +265,9 @@ int main(int argc, char **argv)
 
   //home arm using service call to arm driver
   pressEnter("Press [Enter] to go home");
-  home_client = n.serviceClient<kinova_msgs::HomeArm>("/m1n6s200_driver/in/home_arm");
-  if(home_client.call(srv))
-    ROS_INFO("Homing arm");
-  else
-    ROS_INFO("Cannot contact homing service. Is it running?");
+  segbot_arm_manipulation::homeArm(n);
 
-
+  // shutdown
   ros::shutdown();
 
   return 0;
