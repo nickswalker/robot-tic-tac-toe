@@ -104,6 +104,20 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request  &req,
   return true;
 }
 
+void move_home(ros::NodeHandle n){
+  geometry_msgs::PoseStamped p_target;
+ 
+  p_target.header.frame_id = "m1n6s200_link_base";
+  p_target.pose.position.x = 0.295476645231;
+  p_target.pose.position.y = -0.126079112291;
+  p_target.pose.position.z = 0.0612120516598;
+  p_target.pose.orientation.x = 0.0154021102935;
+  p_target.pose.orientation.y = -0.999735891819;
+  p_target.pose.orientation.z = 0.00489564239979;
+  p_target.pose.orientation.w = -0.0163363721222;
+  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
+}
+
 
 geometry_msgs::PoseStamped point(int8_t grid_square)
 {
@@ -216,7 +230,7 @@ void scratch_chin(ros::NodeHandle n)
   p_target.header.frame_id = "m1n6s200_link_base";
   p_target.pose.position.x = -0.236974254251;
   p_target.pose.position.y = 0.006457015872;
-  p_target.pose.position.z = 0.640369296074;
+  p_target.pose.position.z = 0.700369296074;
   p_target.pose.orientation.x = -0.645233333111;
   p_target.pose.orientation.y = 0.0155444145203;
   p_target.pose.orientation.z = 0.638653099537;
@@ -231,7 +245,7 @@ void scratch_chin(ros::NodeHandle n)
     segbot_arm_manipulation::moveFingers(5500,5500);
   }
   // move arm back to home
-  segbot_arm_manipulation::homeArm(n);               // move to home
+  move_home(n);
 }
 
 
@@ -261,11 +275,11 @@ int main(int argc, char **argv)
   // close hand and move home
   pressEnter("Press [Enter] to close the hand and move home."); 
   segbot_arm_manipulation::moveFingers(5500,5500);   // close the hand
-  segbot_arm_manipulation::homeArm(n);               // move to home
- 
+  move_home(n);
+  
   // scratch chin  
   scratch_chin(n);
- 
+  
   // iterate through all the 9 grid squares.
   bool positions[9] = {};            // keeps track of random positions that have been chosen        
   srand(time(NULL));           
@@ -286,12 +300,12 @@ int main(int argc, char **argv)
 
     // move back home
     pressEnter("Press [Enter] to move arm back home");
-    segbot_arm_manipulation::homeArm(n);               
+    move_home(n);
   }
 
   //home arm using service call to arm driver
   pressEnter("Press [Enter] to go home");
-  segbot_arm_manipulation::homeArm(n);
+  move_home(n);
 
   // shutdown
   ros::shutdown();
