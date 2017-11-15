@@ -9,6 +9,7 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <kinova_msgs/FingerPosition.h>
+#include <time.h>
 
 
 //our own arm library 
@@ -109,7 +110,7 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
   geometry_msgs::PoseStamped p_target;
  
   p_target.header.frame_id = "m1n6s200_link_base";
-  p_target.pose.position.z = 0.01;  // uniform height from table for all positions
+  p_target.pose.position.z = 0.03;  // uniform height from table for all positions
 
   switch(grid_square){
     case(0): {
@@ -258,7 +259,8 @@ int main(int argc, char **argv)
   scratch_chin(n);
  
   // iterate through all the 9 grid squares.
-  bool positions[9] = {};                  // keeps track of random positions that have been chosen                      
+  bool positions[9] = {};            // keeps track of random positions that have been chosen        
+  srand(time(NULL));           
   for(int i = 0; i < 9; i++){
 
     // choose a random position that has not encountered yet
