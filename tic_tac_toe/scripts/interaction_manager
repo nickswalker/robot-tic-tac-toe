@@ -41,7 +41,10 @@ if __name__ == "__main__":
         
         # Get game state from vision and detect change
         state_change_flag.acquire()
-        # If game is done, end
         # Calculate move
         move = 0
+        # move = tic_tac_toe.game_agent.getMove(board, computerLetter-either 1 or 2)
+	# If game is done, end
+	if move == -1:
+	    pass #end
         executor(move)
