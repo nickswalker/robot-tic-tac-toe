@@ -39,12 +39,7 @@ class TicTacToeGame:
 			return random.choice(possibleMoves)
 		else:
 			return None
-	def getComputerMove(board, computerLetter):
-		# Given a board and the computer's letter, determine where to move and return that move.
-		if computerLetter == 1:
-			playerLetter = 2
-		else:
-			playerLetter = 1
+	def getComputerMove(board, computerLetter, playerLetter):
 		# Here is our algorithm for our Tic Tac Toe AI:
 		# First, check if we can win in the next move
 		for i in range(0, 9):
@@ -75,11 +70,17 @@ class TicTacToeGame:
 			if isSpaceFree(board, i):
 				return False
 		return True
-	def makeMove(theBoard, computerLetter):
-		move = getComputerMove(theBoard, computerLetter)
-		makeMove(theBoard, computerLetter, move)
-		if isWinner(theBoard, computerLetter):
-			print('The computer has beaten you! You lose.')
+	def getMove(theBoard, computerLetter):
+		# Given a board and the computer's letter, determine where to move and return that move.
+		if computerLetter == 1:
+			playerLetter = 2
+		else:
+			playerLetter = 1
+		if isWinner(theBoard, playerLetter):
+			print('The player has won!')
+			return -1
 		elif isBoardFull(theBoard):
 			print('The game is a tie!')
+			return -1
+		move = getComputerMove(theBoard, computerLetter, playerLetter)
 		return move
