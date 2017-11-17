@@ -318,6 +318,79 @@ void move_incremental(ros::NodeHandle n, int dest)
   // move to new incremental position based off of destination
   segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 
+  ros::Publisher pub_angular_velocity = n.advertise<kinova_msgs::JointAngles>("/m1n6s200_driver/in/joint_velocity", 10);
+  kinova_msgs::JointAngles msg;
+  for(int i = 0; i < 2; i++){
+  msg.joint1 = 0.0;
+  msg.joint2 = 0.0;
+  msg.joint3 = 0.0;
+  msg.joint4 = 0.0;
+  msg.joint5 = 45;
+  msg.joint6 = 0.0; 
+
+  double duration = 0.75;  // 0.75 seconds
+  double elapsed_time = 0.0;
+	
+  double pub_rate = 100.0;
+  ros::Rate r(pub_rate);
+	
+  while (ros::ok()){
+    //collect messages
+    ros::spinOnce();
+	
+    //publish velocity message
+    pub_angular_velocity.publish(msg);
+		
+    r.sleep();
+		
+    elapsed_time += (1.0/pub_rate);
+    if (elapsed_time > duration)
+      break;
+  }
+
+  msg.joint5 = -45;
+
+  duration = 1.5;  // 1.5 seconds
+  elapsed_time = 0.0;
+	
+  while (ros::ok()){
+    //collect messages
+    ros::spinOnce();
+	
+    //publish velocity message
+    pub_angular_velocity.publish(msg);
+		
+    r.sleep();
+		
+    elapsed_time += (1.0/pub_rate);
+    if (elapsed_time > duration)
+      break;
+  }
+
+  msg.joint5 = 45;
+
+  duration = 0.75;  // 0.75 seconds
+  elapsed_time = 0.0;
+	
+  while (ros::ok()){
+    //collect messages
+    ros::spinOnce();
+	
+    //publish velocity message
+    pub_angular_velocity.publish(msg);
+		
+    r.sleep();
+		
+    elapsed_time += (1.0/pub_rate);
+    if (elapsed_time > duration)
+      break;
+  }
+  }
+
+	
+  //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
+  msg.joint5 = 0; 
+  pub_angular_velocity.publish(msg);
 }
 
 
@@ -348,10 +421,7 @@ int main(int argc, char **argv)
   pressEnter("Press [Enter] to close the hand and move home."); 
   segbot_arm_manipulation::moveFingers(5500,5500);   // close the hand
   move_home(n);
-  
-  // scratch chin  
-  //scratch_chin(n);
-  
+    
   // iterate through all the 9 grid squares.
   bool positions[9] = {};            // keeps track of random positions that have been chosen        
   srand(time(NULL));           
@@ -364,11 +434,18 @@ int main(int argc, char **argv)
     } while(positions[randNum] == true);
     positions[randNum] = true;
 
-    // move incremental
-    move_incremental(n, randNum);
+    
+    if(i % 2 == 0){
+      // move incremental
+      move_incremental(n, randNum);
+    }
+    else{
+      // scratch chin  
+      scratch_chin(n);
+    }
 
     // move to grid coordinate
-    pressEnter("Press [Enter] to move to next grid coordinate");
+    //pressEnter("Press [Enter] to move to next grid coordinate");
     geometry_msgs::PoseStamped p_target = point(randNum);
     ROS_INFO("Moving to grid square %d", randNum);
     segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
