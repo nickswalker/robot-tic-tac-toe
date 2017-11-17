@@ -228,13 +228,13 @@ void scratch_chin(ros::NodeHandle n)
   // set coordinates for arm
   geometry_msgs::PoseStamped p_target;
   p_target.header.frame_id = "m1n6s200_link_base";
-  p_target.pose.position.x = -0.236974254251;
-  p_target.pose.position.y = 0.006457015872;
-  p_target.pose.position.z = 0.700369296074;
-  p_target.pose.orientation.x = -0.645233333111;
-  p_target.pose.orientation.y = 0.0155444145203;
-  p_target.pose.orientation.z = 0.638653099537;
-  p_target.pose.orientation.w = 0.418992251158;
+  p_target.pose.position.x = -0.169198065996;
+  p_target.pose.position.y = 0.193875789642;
+  p_target.pose.position.z = 0.601638615131;
+  p_target.pose.orientation.x = 0.191084221005;
+  p_target.pose.orientation.y = -0.631144821644;
+  p_target.pose.orientation.z = 0.527726113796;
+  p_target.pose.orientation.w = 0.535395443439;
 
   // move arm to head
   segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
@@ -244,8 +244,80 @@ void scratch_chin(ros::NodeHandle n)
     segbot_arm_manipulation::moveFingers(100,100);
     segbot_arm_manipulation::moveFingers(5500,5500);
   }
-  // move arm back to home
-  move_home(n);
+}
+
+
+void move_incremental(ros::NodeHandle n, int dest)
+{
+  pressEnter("Press [Enter] to move incremental");
+  
+  // set coordinates for arm
+  geometry_msgs::PoseStamped p_target;
+  p_target.header.frame_id = "m1n6s200_link_base";
+  p_target.pose.position.x = 0.311155617237;
+  p_target.pose.position.y = 0.189424604177;
+  p_target.pose.position.z = 0.213762119412;
+  p_target.pose.orientation.x = 0.665959119797;
+  p_target.pose.orientation.y = -0.745930075645;
+  p_target.pose.orientation.z = 0.00926198810339;
+  p_target.pose.orientation.w = 0.0010175104253;
+
+  // move arm to incremental start position
+  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
+
+  switch(dest){
+    // first quadrant
+    case 0:
+    case 1:
+    case 3:
+      p_target.pose.position.x = 0.359608054161;
+      p_target.pose.position.y = 0.243571102619;
+      p_target.pose.position.z = 0.0770178735256;
+      p_target.pose.orientation.x = -0.996901810169;
+      p_target.pose.orientation.y = 0.0625432953238;
+      p_target.pose.orientation.z = -0.0410128049552;
+      p_target.pose.orientation.w = 0.0243524741381;
+      break;
+
+    // second quadrant
+    case 2:
+    case 5:
+      p_target.pose.position.x = 0.354002892971;
+      p_target.pose.position.y = 0.143095493317;
+      p_target.pose.position.z = 0.0753956288099;
+      p_target.pose.orientation.x = -0.998840987682;
+      p_target.pose.orientation.y = 0.0366943664849;
+      p_target.pose.orientation.z = -0.0288470163941;
+      p_target.pose.orientation.w = 0.0117430668324;
+      break;
+
+    // third quadrant
+    case 4:
+    case 6:
+      p_target.pose.position.x = 0.354002892971;
+      p_target.pose.position.y = 0.143095493317;
+      p_target.pose.position.z = 0.0753956288099;
+      p_target.pose.orientation.x = -0.998840987682;
+      p_target.pose.orientation.y = 0.0366943664849;
+      p_target.pose.orientation.z = -0.0288470163941;
+      p_target.pose.orientation.w = 0.0117430668324;
+      break;
+
+    // fourth quadrant
+    case 7:
+    case 8:
+      p_target.pose.position.x = 0.259484708309;
+      p_target.pose.position.y = 0.143753558397;
+      p_target.pose.position.z = 0.0591824762523;
+      p_target.pose.orientation.x = 0.995885074139;
+      p_target.pose.orientation.y = -0.0568450242281;
+      p_target.pose.orientation.z = 0.0699009969831;
+      p_target.pose.orientation.w = 0.00976687949151;
+      break;
+  }
+  // move to new incremental position based off of destination
+  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
+
 }
 
 
@@ -278,7 +350,7 @@ int main(int argc, char **argv)
   move_home(n);
   
   // scratch chin  
-  scratch_chin(n);
+  //scratch_chin(n);
   
   // iterate through all the 9 grid squares.
   bool positions[9] = {};            // keeps track of random positions that have been chosen        
@@ -291,6 +363,9 @@ int main(int argc, char **argv)
       randNum = rand() % 10;
     } while(positions[randNum] == true);
     positions[randNum] = true;
+
+    // move incremental
+    move_incremental(n, randNum);
 
     // move to grid coordinate
     pressEnter("Press [Enter] to move to next grid coordinate");
