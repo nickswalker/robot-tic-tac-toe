@@ -221,6 +221,7 @@ geometry_msgs::PoseStamped point(int8_t grid_square)
   return p_target;
 }
 
+
 void scratch_chin(ros::NodeHandle n)
 {
   pressEnter("Press [Enter] to scratch chin");
@@ -320,17 +321,101 @@ void move_incremental(ros::NodeHandle n, int dest)
 
   ros::Publisher pub_angular_velocity = n.advertise<kinova_msgs::JointAngles>("/m1n6s200_driver/in/joint_velocity", 10);
   kinova_msgs::JointAngles msg;
+  // wave wrist around twice
   for(int i = 0; i < 2; i++){
+    msg.joint1 = 0.0;
+    msg.joint2 = 0.0;
+    msg.joint3 = 0.0;
+    msg.joint4 = 0.0;
+    msg.joint5 = 45;
+    msg.joint6 = 0.0; 
+
+    double duration = 0.75;  // 0.75 seconds
+    double elapsed_time = 0.0;
+    double pub_rate = 100.0;
+    ros::Rate r(pub_rate);
+	
+    while (ros::ok()){
+      //collect messages
+      ros::spinOnce();
+	
+      //publish velocity message
+      pub_angular_velocity.publish(msg);
+      r.sleep();
+      elapsed_time += (1.0/pub_rate);
+      if (elapsed_time > duration){
+        break;
+      }
+    }
+
+    msg.joint5 = -45;
+    duration = 1.5;  // 1.5 seconds
+    elapsed_time = 0.0;
+	
+    while (ros::ok()){
+      //collect messages
+      ros::spinOnce();
+	
+      //publish velocity message
+      pub_angular_velocity.publish(msg);
+      r.sleep();
+      elapsed_time += (1.0/pub_rate);
+      if (elapsed_time > duration){
+        break;
+      }
+    }
+
+    msg.joint5 = 45;
+    duration = 0.75;  // 0.75 seconds
+    elapsed_time = 0.0;
+	
+    while (ros::ok()){
+      //collect messages
+      ros::spinOnce();
+	
+      //publish velocity message
+      pub_angular_velocity.publish(msg);
+      r.sleep();		
+      elapsed_time += (1.0/pub_rate);
+      if (elapsed_time > duration){
+        break;
+      }
+    }
+  }
+	
+  //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
+  msg.joint5 = 0; 
+  pub_angular_velocity.publish(msg);
+}
+
+
+void move_exaggerated(ros::NodeHandle n){
+  pressEnter("Press [Enter] to move exaggerated");
+  
+  // move to exaggerated staging position
+  geometry_msgs::PoseStamped p_target; 
+  p_target.header.frame_id = "m1n6s200_link_base";
+  p_target.pose.position.x = 0.311155617237;
+  p_target.pose.position.y = 0.189424604177;
+  p_target.pose.position.z = 0.213762119412;
+  p_target.pose.orientation.x = 0.665959119797;
+  p_target.pose.orientation.y = -0.745930075645;
+  p_target.pose.orientation.z = 0.00926198810339;
+  p_target.pose.orientation.w = 0.0010175104253;
+  segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
+
+  // rotate wrist around
+  ros::Publisher pub_angular_velocity = n.advertise<kinova_msgs::JointAngles>("/m1n6s200_driver/in/joint_velocity", 10);
+  kinova_msgs::JointAngles msg;
   msg.joint1 = 0.0;
   msg.joint2 = 0.0;
   msg.joint3 = 0.0;
   msg.joint4 = 0.0;
-  msg.joint5 = 45;
-  msg.joint6 = 0.0; 
+  msg.joint5 = 0.0;
+  msg.joint6 = 45; 
 
-  double duration = 0.75;  // 0.75 seconds
+  double duration = 8;  // 5 seconds
   double elapsed_time = 0.0;
-	
   double pub_rate = 100.0;
   ros::Rate r(pub_rate);
 	
@@ -340,57 +425,19 @@ void move_incremental(ros::NodeHandle n, int dest)
 	
     //publish velocity message
     pub_angular_velocity.publish(msg);
-		
     r.sleep();
-		
     elapsed_time += (1.0/pub_rate);
-    if (elapsed_time > duration)
+    if (elapsed_time > duration){
       break;
+    }
   }
-
-  msg.joint5 = -45;
-
-  duration = 1.5;  // 1.5 seconds
-  elapsed_time = 0.0;
-	
-  while (ros::ok()){
-    //collect messages
-    ros::spinOnce();
-	
-    //publish velocity message
-    pub_angular_velocity.publish(msg);
-		
-    r.sleep();
-		
-    elapsed_time += (1.0/pub_rate);
-    if (elapsed_time > duration)
-      break;
-  }
-
-  msg.joint5 = 45;
-
-  duration = 0.75;  // 0.75 seconds
-  elapsed_time = 0.0;
-	
-  while (ros::ok()){
-    //collect messages
-    ros::spinOnce();
-	
-    //publish velocity message
-    pub_angular_velocity.publish(msg);
-		
-    r.sleep();
-		
-    elapsed_time += (1.0/pub_rate);
-    if (elapsed_time > duration)
-      break;
-  }
-  }
-
-	
-  //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
-  msg.joint5 = 0; 
+  msg.joint6 = 0; 
   pub_angular_velocity.publish(msg);
+
+  // open and close finger
+  segbot_arm_manipulation::moveFingers(100,100);
+  segbot_arm_manipulation::moveFingers(5500,5500);
+
 }
 
 
@@ -421,7 +468,7 @@ int main(int argc, char **argv)
   pressEnter("Press [Enter] to close the hand and move home."); 
   segbot_arm_manipulation::moveFingers(5500,5500);   // close the hand
   move_home(n);
-    
+
   // iterate through all the 9 grid squares.
   bool positions[9] = {};            // keeps track of random positions that have been chosen        
   srand(time(NULL));           
@@ -434,13 +481,13 @@ int main(int argc, char **argv)
     } while(positions[randNum] == true);
     positions[randNum] = true;
 
-    
-    if(i % 2 == 0){
-      // move incremental
+    if(i == 0 || i == 3 || i == 6){
+      move_exaggerated(n);  
+    }  
+    else if(i == 1 || i == 4 || i == 7){
       move_incremental(n, randNum);
     }
-    else{
-      // scratch chin  
+    else if (i == 2 || i == 5 || i == 8){
       scratch_chin(n);
     }
 
