@@ -8,8 +8,17 @@
 #include <cv_bridge/cv_bridge.h>
 using namespace cv;
 
-SimpleBlobDetector *redDetector;
-SimpleBlobDetector *blueDetector;
+SimpleBlobDetector *blobDetector;
+bool show_detections;
+
+void filterChannel(Mat &src, Mat &dest) {
+    int erosion_size = 4;
+    Mat element = getStructuringElement(MORPH_ELLIPSE,
+                                       Size(2*erosion_size + 1, 2*erosion_size+1));
+
+    erode(src, dest, element);
+    dilate(dest, dest, element);
+}
 
 void image_cb(const sensor_msgs::ImageConstPtr msg) {
     cv_bridge::CvImagePtr cv_ptr;
@@ -21,58 +30,67 @@ void image_cb(const sensor_msgs::ImageConstPtr msg) {
       return;
     }
     Mat img(cv_ptr->image);
-    Mat bgr [3];
-    split(img, bgr);
-    threshold(bgr[0], bgr[0], 40, 255, CV_THRESH_BINARY);
-    threshold(bgr[2], bgr[2], 60, 255, CV_THRESH_BINARY);
+    Mat hsv, red, blue;
+    cvtColor(img, hsv, CV_BGR2HSV);
+    inRange(hsv, Scalar(0, 50, 50), Scalar(20,255,255), red);
+    inRange(hsv, Scalar(100, 50, 50), Scalar(115, 255, 255), blue);
 
+    filterChannel(red, red);
+    filterChannel(blue, blue);
+   
 
     // Storage for blobs
-    std::vector<KeyPoint> keypoints;
-
+    std::vector<KeyPoint> red_keypoints;
+    std::vector<KeyPoint> blue_keypoints;
+    
     // Detect blobs
-    blobDetector->detect( img, keypoints);
+    blobDetector->detect(red, red_keypoints);
+    blobDetector->detect(blue, blue_keypoints);
 
-    // Draw detected blobs as red circles.
-    // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
-    // the size of the circle corresponds to the size of blob
-
-    Mat im_with_keypoints;
-    drawKeypoints(img, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-
-    // Update GUI Window
-    imshow("red_channel", bgr[2]);
-    imshow("blue_channel", bgr[0]);
-    imshow("blobs", im_with_keypoints);
-    waitKey(3);
+    // Display preprocessed channels (for debugging)
+    /*
+    Mat display;
+    cvtColor(red, display, CV_GRAY2BGR);
+    imshow("red_channel", display);
+    cvtColor(blue, display, CV_GRAY2BGR);
+    imshow("blue_channel", display);
+    */
+    if (show_detections) {
+        Mat im_with_keypoints;
+        drawKeypoints(img, red_keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+        drawKeypoints(im_with_keypoints, blue_keypoints, im_with_keypoints, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        imshow("blobs", im_with_keypoints);
+        waitKey(3);
+    }
 }
+
 
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "game_state_detector");
 
     ros::NodeHandle n;
-    ros::NodeHandle ph;
+    ros::NodeHandle ph("~");
     std::string camera_topic;
     if (!ph.hasParam("camera_topic")) {
       ROS_ERROR("Please set the camera_topic parameter");
       ros::shutdown();
     }
 
-    camera_topic = "/usb_cam/image_raw";
-    //ph.getParam("~camera_topic", camera_topic);
+    ph.getParam("camera_topic", camera_topic);
+    ph.param<bool>("show_detections", show_detections, true);
     ROS_INFO_STREAM(camera_topic);
   
     // Setup SimpleBlobDetector parameters.
     SimpleBlobDetector::Params params;
 
-    // Change thresholds
-    params.minThreshold = 10;
-    params.maxThreshold = 200;
+    params.filterByColor = true;
+    params.blobColor = 255;
 
     // Filter by Area.
     params.filterByArea = true;
     params.minArea = 1500;
+    //params.maxArea = 2000;
 
     // Filter by Circularity
     params.filterByCircularity = true;
@@ -87,16 +105,15 @@ int main(int argc, char **argv) {
     params.minInertiaRatio = 0.01;
 
   
-      blobDetector = new SimpleBlobDetector(params);
+    blobDetector = new SimpleBlobDetector(params);
       
-      ros::Subscriber camera_sub = n.subscribe<sensor_msgs::Image>(camera_topic, 1, image_cb);
-      ros::Publisher state_pub = n.advertise<tic_tac_toe::GameState>("game_state", 1000);
+    ros::Subscriber camera_sub = n.subscribe<sensor_msgs::Image>(camera_topic, 1, image_cb);
+    ros::Publisher state_pub = n.advertise<tic_tac_toe::GameState>("game_state", 1000);
 
-      ros::Rate loop_rate(10);
+    ros::Rate loop_rate(10);
 
 
-      while (ros::ok())
-      {
+    while (ros::ok()) {
         /**
          * This is a message object. You stuff it with data, and then publish it.
          */
@@ -107,8 +124,8 @@ int main(int argc, char **argv) {
         ros::spinOnce();
 
         loop_rate.sleep();
-      }
+    }
 
 
-      return 0;
+    return 0;
 }
