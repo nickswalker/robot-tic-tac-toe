@@ -295,13 +295,13 @@ void move_incremental(ros::NodeHandle n, int dest)
     // third quadrant
     case 4:
     case 6:
-      p_target.pose.position.x = 0.354002892971;
-      p_target.pose.position.y = 0.143095493317;
-      p_target.pose.position.z = 0.0753956288099;
-      p_target.pose.orientation.x = -0.998840987682;
-      p_target.pose.orientation.y = 0.0366943664849;
-      p_target.pose.orientation.z = -0.0288470163941;
-      p_target.pose.orientation.w = 0.0117430668324;
+      p_target.pose.position.x = 0.259093165398;
+      p_target.pose.position.y = 0.249157130718;
+      p_target.pose.position.z = 0.070698030293;
+      p_target.pose.orientation.x = -0.718941569328;
+      p_target.pose.orientation.y = -0.69405412674;
+      p_target.pose.orientation.z = -0.0322042442858;
+      p_target.pose.orientation.w = -0.0193572230637;
       break;
 
     // fourth quadrant
@@ -534,12 +534,13 @@ int main(int argc, char **argv)
       randNum = rand() % 10;
     } while(positions[randNum] == true);
     positions[randNum] = true;
-
-    if(i == 0 || i == 4 || i == 8){
-      tap_fingers(n);
+ 
+    // run the idle bahavior based on the current iteration
+    if(i == 0 || i == 4 || i == 8){ 
+     move_incremental(n, randNum);
     }  
     else if(i == 1 || i == 5){
-      move_incremental(n, randNum);
+     tap_fingers(n);
     }
     else if (i == 2 || i == 6){
       scratch_chin(n);
