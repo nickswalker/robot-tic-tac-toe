@@ -31,6 +31,59 @@ bool heardFingers;
 //true if Ctrl-C is pressed
 bool g_caught_sigint=false;
 
+// Scan wav files
+int scan(std::string dir, std::vector<std::string> &files)
+{
+    DIR* dr = opendir(dir.c_str());
+    struct dirent *drp;
+
+    while ((drp = readdir(dr)) != NULL)
+    {
+        struct stat s;
+        stat((dir + "/" + std::string(drp->d_name)).c_str(), &s);
+
+        if (s.st_mode & S_IFREG)
+        {
+            files.push_back(std::string(drp->d_name));
+        }
+    }
+
+    closedir(dr);
+
+    return 0;
+}
+
+//Open vlc 
+int playmusic(std::string idx)
+{
+    std::string dir = "./src/hri/tic_tac_toe/src/", cmd = "vlc";
+    std::vector<std::string> files, vfiles;
+
+    scan(dir, files);
+
+    for (unsigned int i = 0; i < files.size(); i++)
+    {
+       // if (files[i].substr(files[i].find(".")) == ".m4a")
+	if (files[i] == idx)
+        {
+            vfiles.push_back(std::string(files[i]));
+        }
+    }
+
+    for (unsigned int i = 0; i < vfiles.size(); i++)
+    {
+        cmd += " " + dir + "/" + vfiles[i];
+    }
+
+    printf("%s\n", cmd.c_str());
+    system(cmd.c_str());
+
+    return 0;
+
+
+}
+
+
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig) {
     g_caught_sigint = true;
@@ -517,6 +570,11 @@ int main(int argc, char **argv)
   signal(SIGINT, sig_handler);
       
   listenForArmData();
+
+  // play sound
+  std::string s;
+  s = "b.ogg";
+  playmusic(s);
 
   // close hand and move home
   pressEnter("Press [Enter] to close the hand and move home."); 
