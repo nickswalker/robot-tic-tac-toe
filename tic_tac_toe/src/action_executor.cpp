@@ -56,7 +56,7 @@ int scan(std::string dir, std::vector<std::string> &files)
 //Open vlc 
 int playmusic(std::string idx)
 {
-    std::string dir = "./src/hri/tic_tac_toe/src/", cmd = "vlc";
+    std::string dir = "./src/hri/tic_tac_toe/src/", cmd = "cvlc";
     std::vector<std::string> files, vfiles;
 
     scan(dir, files);
@@ -573,7 +573,7 @@ int main(int argc, char **argv)
 
   // play sound
   std::string s;
-  s = "b.ogg";
+  s = "haha.m4a";
   playmusic(s);
 
   // close hand and move home
