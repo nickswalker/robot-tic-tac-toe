@@ -17,14 +17,6 @@ void filterChannel(Mat &src, Mat &dest) {
     dilate(dest, dest, element);
 }
 
-std::vector<KeyPoint> detectPieces(Mat &img) {
-
-}
-
-std::vector<Vec4i> detectGrid(Mat &img) {
-
-}
-
 bool linesClose(Vec2f &first, Vec2f &second) {
     return fabs(first[0] - second[0]) < 20 && fabs(first[1] - second[1]) < CV_PI * 10 / 180;
 }
@@ -53,9 +45,6 @@ bool notVerticalHorizontal(Vec2f &line) {
     return !isAlmostVerticalOrHorizontal(line);
 }
 
-vector<Piece> extractPieces() {
-
-}
 
 vector<Point> extractGridContour(vector<vector<Point> > contours, vector<Vec4i> hierarchy) {
     // Get the moments
@@ -141,41 +130,6 @@ void mergeRelatedLines(std::vector<Vec2f> &lines, Mat &img) {
     }
 }
 
-void drawContours(Mat &img, vector<vector<Point> > &contours,  vector<Vec4i> &hierarchy, vector<Point2f> *centers = NULL) {
-    Scalar color(255, 0, 0);
-    // Draw contours
-    for(int i = 0; i < contours.size(); i++) {
-        drawContours( img, contours, i, color, 2, 8, hierarchy, 0, Point() );
-        if (centers != NULL) {
-            circle(img, (*centers)[i], 4, color, -1, 8, 0);
-        }
-    }
-
-}
-
-void drawCorners(Mat &img, Mat &cornerness) {
-    // Drawing a circle around corners
-    for( int j = 0; j < cornerness.rows ; j++ ) {
-        for( int i = 0; i < cornerness.cols; i++ ) {
-            if( (int) cornerness.at<float>(j,i) > 200 ) {
-                circle(img, Point(i, j), 5,  Scalar(0), 2, 8, 0);
-            }
-        }
-    }
-}
-
-void drawLines(Mat &img, vector<Vec2f> &lines) {
-    for (size_t i = 0; i < lines.size(); i++) {
-      float r = lines[i][0], t = lines[i][1];
-      double cos_t = cos(t), sin_t = sin(t);
-      double x0 = r * cos_t, y0 = r * sin_t;
-      double alpha = 1000;
-
-      Point pt1(cvRound(x0 + alpha * (-sin_t)), cvRound(y0 + alpha * cos_t));
-      Point pt2(cvRound(x0 - alpha * (-sin_t)), cvRound(y0 - alpha * cos_t));
-      line(img, pt1, pt2, Scalar(0, 255, 0), 3);
-    }
-}
 
 void detectCorners(Mat &img, vector<Vec2f> &lines){
     /// Detector parameters
@@ -259,14 +213,81 @@ vector<RotatedRect> produceGrid(RotatedRect &boundingBox) {
     return result;
 }
 
-void drawGrid(Mat &img, vector<RotatedRect> &cells){
-    for (vector<RotatedRect>::const_iterator i = cells.begin(); i < cells.end(); ++i) {
-        const RotatedRect &cell = *i;
-        Point2f vertices[4];
-        cell.points(vertices);
-        for (int v = 0; v < 4; v++)
-            line(img, vertices[v], vertices[(v+1) % 4], Scalar(0,255,0));
+vector<Piece> extractPieces(Mat &img, SimpleBlobDetector &blobDetector) {
+    Mat hsv, red, blue, grid;
+    cvtColor(img, hsv, CV_BGR2HSV);
+    inRange(hsv, Scalar(0, 50, 50), Scalar(20, 255, 255), red);
+    inRange(hsv, Scalar(100, 50, 50), Scalar(125, 255, 255), blue);
+
+    filterChannel(red, red);
+    filterChannel(blue, blue);
+
+#ifdef DEBUG
+    Mat display;
+    cvtColor(red, display, CV_GRAY2BGR);
+    imshow("red_channel", display);
+    cvtColor(blue, display, CV_GRAY2BGR);
+    imshow("blue_channel", display);
+    waitKey(3);
+#endif
+    // Storage for blobs
+    vector<KeyPoint> red_keypoints;
+    vector<KeyPoint> blue_keypoints;
+
+    // Detect blobs
+    blobDetector.detect(red, red_keypoints);
+    blobDetector.detect(blue, blue_keypoints);
+
+    vector<Piece> pieces;
+    for(vector<KeyPoint>::const_iterator i = red_keypoints.begin(); i < red_keypoints.end(); ++i){
+        pieces.push_back(Piece(RED,i->pt));
     }
+    for(vector<KeyPoint>::const_iterator i = blue_keypoints.begin(); i < blue_keypoints.end(); ++i){
+        pieces.push_back(Piece(BLUE,i->pt));
+    }
+    return pieces;
 }
+
+vector<RotatedRect> extractGrid(Mat &img) {
+    Mat edge, grid;
+    cvtColor(img, grid, CV_BGR2GRAY);
+    //adaptiveThreshold(grid, grid, 255, CV_ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 55, 7);
+    threshold(grid, grid,0,255, CV_THRESH_OTSU);
+    //inRange(hsv, Scalar(0, 0, 0), Scalar(180, 255, 80), grid);
+    //filterChannel(grid, grid);
+    Canny(grid, edge, 50, 200, 3);
+    //cvtColor(edge, edge, CV_GRAY2BGR);
+
+#ifdef DEBUG
+    Mat display;
+    cvtColor(grid, display, CV_GRAY2BGR);
+    imshow("grid_channel", display);
+    cvtColor(edge, display, CV_GRAY2BGR);
+    imshow("edge_channel", edge);
+    waitKey(3);
+#endif
+
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+
+    /// Find contours
+    findContours(edge, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+
+    vector<Point> gridContour = extractGridContour(contours, hierarchy);
+    if (gridContour.empty()) {
+        return vector<RotatedRect>();
+    }
+#ifdef DEBUG
+    //drawContours(detections_img, contours, hierarchy);
+    polylines(display, gridContour, false, Scalar(0,255,0));
+#endif
+
+    // Get oriented bounding box
+    RotatedRect boundingBox = minAreaRect(gridContour);
+    RotatedRect gridBoundingBox = boundingBox;
+    gridBoundingBox.size = Size(gridBoundingBox.size.width * 3.5, gridBoundingBox.size.height * 3.5);
+    return produceGrid(gridBoundingBox);
+}
+
 
 #endif //TIC_TAC_TOE_IMAGE_PROCESSING_H

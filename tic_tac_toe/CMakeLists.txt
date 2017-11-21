@@ -108,6 +108,12 @@ add_executable(game_state_detector src/game_state_detector.cpp)
 add_dependencies(game_state_detector tic_tac_toe_generate_messages_cpp)
 target_link_libraries(game_state_detector ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+ target_compile_definitions(game_state_detector PUBLIC DEBUG=1)
+elseif(CMAKE_BUILD_TYPE MATCHES Release)
+ target_compile_definitions(game_state_detector PUBLIC DEBUG=0)
+endif()
+
 add_executable(action_executor src/action_executor.cpp)
 add_dependencies(action_executor tic_tac_toe_generate_messages_cpp)
 target_link_libraries(action_executor ${catkin_LIBRARIES})

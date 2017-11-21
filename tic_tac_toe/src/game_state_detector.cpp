@@ -7,7 +7,7 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <image_processing.h>
-#include <algorithm>
+#include <drawing_helpers.h>
 #include <piece.h>
 
 using namespace cv;
@@ -21,7 +21,7 @@ bool lastObservedWasValid = false;
 
 
 void assignPiecesToCells(vector<Piece> pieces, vector<RotatedRect> cells, int *dest) {
-    memset(dest,0,9);
+    memset(dest,0,9 * sizeof(int));
     Point2f vertices[4];
     for (int i = 0; i < pieces.size(); i++) {
         Piece currentPiece = pieces[i];
@@ -48,79 +48,16 @@ void image_cb(const sensor_msgs::ImageConstPtr msg) {
         return;
     }
     Mat img(cv_ptr->image);
-    Mat hsv, red, blue, grid;
-    cvtColor(img, hsv, CV_BGR2HSV);
-    inRange(hsv, Scalar(0, 50, 50), Scalar(20, 255, 255), red);
-    inRange(hsv, Scalar(100, 50, 50), Scalar(125, 255, 255), blue);
 
-    filterChannel(red, red);
-    filterChannel(blue, blue);
+    vector<Piece> pieces = extractPieces(img, *blobDetector);
 
-    // Storage for blobs
-    vector<KeyPoint> red_keypoints;
-    vector<KeyPoint> blue_keypoints;
-
-    // Detect blobs
-    blobDetector->detect(red, red_keypoints);
-    blobDetector->detect(blue, blue_keypoints);
-
-    vector<Piece> pieces;
-    for(vector<KeyPoint>::const_iterator i = red_keypoints.begin(); i < red_keypoints.end(); ++i){
-        pieces.push_back(Piece(RED,i->pt));
-    }
-    for(vector<KeyPoint>::const_iterator i = blue_keypoints.begin(); i < blue_keypoints.end(); ++i){
-        pieces.push_back(Piece(BLUE,i->pt));
-    }
-
-    Mat edge;
-    cvtColor(img, grid, CV_BGR2GRAY);
-    //adaptiveThreshold(grid, grid, 255, CV_ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 55, 7);
-    threshold(grid, grid,0,255, CV_THRESH_OTSU);
-    //inRange(hsv, Scalar(0, 0, 0), Scalar(180, 255, 80), grid);
-    //filterChannel(grid, grid);
-    Canny(grid, edge, 50, 200, 3);
-    //cvtColor(edge, edge, CV_GRAY2BGR);
-
-
-    vector<vector<Point> > contours;
-    vector<Vec4i> hierarchy;
-
-    /// Find contours
-    findContours(edge, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
-
-    vector<Point> gridContour = extractGridContour(contours, hierarchy);
-    if (gridContour.size() == 0) {
-        lastObservedWasValid = false;
-        return;
-    }
-    // Get oriented bounding box
-    RotatedRect boundingBox = minAreaRect(gridContour);
-    RotatedRect gridBoundingBox = boundingBox;
-    gridBoundingBox.size = Size(gridBoundingBox.size.width * 3.5, gridBoundingBox.size.height * 3.5);
-
-    vector<RotatedRect> gridCells = produceGrid(gridBoundingBox);
+    vector<RotatedRect> gridCells = extractGrid(img);
 
     assignPiecesToCells(pieces, gridCells, lastObservedState);
     lastObservedWasValid = true;
     if (show_detections) {
-        // Display preprocessed channels (for debugging)
-        Mat display;
-        cvtColor(red, display, CV_GRAY2BGR);
-        imshow("red_channel", display);
-        cvtColor(blue, display, CV_GRAY2BGR);
-        imshow("blue_channel", display);
-        cvtColor(grid, display, CV_GRAY2BGR);
-        imshow("grid_channel", display);
-        cvtColor(edge, display, CV_GRAY2BGR);
-        imshow("edge_channel", edge);
-
-        Mat detections_img;
-        drawKeypoints(img, red_keypoints, detections_img, Scalar(255, 0, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-        drawKeypoints(detections_img, blue_keypoints, detections_img, Scalar(255, 255, 0),
-                      DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-
-        //drawContours(detections_img, contours, hierarchy);
-        polylines(detections_img, gridContour, false, Scalar(0,255,0));
+        Mat detections_img = img;
+        drawPieces(detections_img, pieces);
         drawGrid(detections_img, gridCells);
         imshow("detections_img", detections_img);
         waitKey(3);
