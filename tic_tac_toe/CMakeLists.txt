@@ -107,8 +107,10 @@ target_link_libraries(game_state_detector_cli ${catkin_LIBRARIES} ${PCL_LIBRARIE
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
  target_compile_definitions(game_state_detector PUBLIC DEBUG=1)
+ target_compile_definitions(game_state_detector_cli PUBLIC DEBUG=1)
 elseif(CMAKE_BUILD_TYPE MATCHES Release)
  target_compile_definitions(game_state_detector PUBLIC DEBUG=0)
+ target_compile_definitions(game_state_detector_cli PUBLIC DEBUG=0)
 endif()
 
 add_executable(action_executor src/action_executor.cpp)
