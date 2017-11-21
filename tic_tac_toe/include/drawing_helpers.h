@@ -4,7 +4,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
-#include <piece.h>
+
 using namespace cv;
 using namespace std;
 
@@ -59,6 +59,16 @@ void drawPieces(Mat &img, vector<Piece> pieces) {
     for(vector<Piece>::const_iterator i = pieces.begin(); i < pieces.end(); ++i) {
         Scalar color = i->team == RED ? Scalar(255, 0, 255) : Scalar(255, 255, 0);
         circle(img, i->center, 5, color, 2);
+    }
+}
+
+void inspectContours(Mat &img, const vector<Vec2f> &contours){
+    for (int i = 0; i < contours.size(); i++) {
+        Mat detections_img;
+        img.copyTo(detections_img);
+        polylines(detections_img, contours[i], false, Scalar(0,255,0));
+        imshow("detections_img", detections_img);
+        waitKey(3);
     }
 }
 

@@ -130,7 +130,6 @@ void mergeRelatedLines(std::vector<Vec2f> &lines, Mat &img) {
     }
 }
 
-
 void detectCorners(Mat &img, vector<Vec2f> &lines){
     /// Detector parameters
     int blockSize = 2;
@@ -147,15 +146,6 @@ void detectCorners(Mat &img, vector<Vec2f> &lines){
     convertScaleAbs(corner_norm, corner);
 }
 
-void inspectContours(Mat &img, vector<Vec2f> &contours){
-    for (int i = 0; i < contours.size(); i++) {
-        Mat detections_img;
-        img.copyTo(detections_img);
-        polylines(detections_img, contours[i], false, Scalar(0,255,0));
-        imshow("detections_img", detections_img);
-        waitKey(3);
-    }
-}
 
 Mat rotate(double theta, Vec2f point) {
     Mat rotation(2,2, CV_64F);
@@ -213,7 +203,7 @@ vector<RotatedRect> produceGrid(RotatedRect &boundingBox) {
     return result;
 }
 
-vector<Piece> extractPieces(Mat &img, SimpleBlobDetector &blobDetector) {
+vector<Piece> extractPieces(const Mat &img, SimpleBlobDetector &blobDetector) {
     Mat hsv, red, blue, grid;
     cvtColor(img, hsv, CV_BGR2HSV);
     inRange(hsv, Scalar(0, 50, 50), Scalar(20, 255, 255), red);
@@ -248,7 +238,7 @@ vector<Piece> extractPieces(Mat &img, SimpleBlobDetector &blobDetector) {
     return pieces;
 }
 
-vector<RotatedRect> extractGrid(Mat &img) {
+vector<RotatedRect> extractGrid(const Mat &img) {
     Mat edge, grid;
     cvtColor(img, grid, CV_BGR2GRAY);
     //adaptiveThreshold(grid, grid, 255, CV_ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 55, 7);

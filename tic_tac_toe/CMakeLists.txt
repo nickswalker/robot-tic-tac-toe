@@ -96,17 +96,14 @@ include_directories(
 
 )
 
-## Add cmake target dependencies of the library
-## as an example, code may need to be generated before libraries
-## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-add_executable(game_state_detector src/game_state_detector.cpp)
+add_executable(game_state_detector src/game_state_detector_node.cpp src/GameStateDetector.cpp)
 add_dependencies(game_state_detector tic_tac_toe_generate_messages_cpp)
 target_link_libraries(game_state_detector ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(game_state_detector_cli src/game_state_detector_cli.cpp src/GameStateDetector.cpp)
+add_dependencies(game_state_detector_cli tic_tac_toe_generate_messages_cpp)
+target_link_libraries(game_state_detector_cli ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
  target_compile_definitions(game_state_detector PUBLIC DEBUG=1)
