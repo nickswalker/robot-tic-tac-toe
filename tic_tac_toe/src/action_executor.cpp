@@ -292,6 +292,14 @@ void scratch_chin(ros::NodeHandle n)
   // move arm to head
   segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 
+  // play sound concurrently
+  pid_t pid=fork();
+  if (pid==0){
+    std::string s;
+    s = "hmm.wav";
+    playmusic(s);
+  }
+
   // scratch chin
   for(int i = 0; i < 2; i++){
     segbot_arm_manipulation::moveFingers(100,100);
@@ -385,6 +393,14 @@ void move_incremental(ros::NodeHandle n, int dest)
   double elapsed_time = 0.0;
   double pub_rate = 100.0;
   ros::Rate r(pub_rate);
+  
+  // play sound concurrently
+  pid_t pid=fork();
+  if (pid==0){
+    std::string s;
+    s = "maybe-here-or-maybe-here.wav";
+    playmusic(s);
+  }
       
   while (ros::ok()){
     //collect messages
@@ -468,6 +484,14 @@ void move_exaggerated(ros::NodeHandle n){
   double elapsed_time = 0.0;
   double pub_rate = 100.0;
   ros::Rate r(pub_rate);
+  
+  // play sound concurrently
+  pid_t pid=fork();
+  if (pid==0){
+    std::string s;
+    s = "wind-up.wav";
+    playmusic(s);
+  }
 	
   while (ros::ok()){
     //collect messages
@@ -535,6 +559,14 @@ void tap_fingers(ros::NodeHandle n)
     }
   }
 
+  // play sound concurrently
+  pid_t pid=fork();
+  if (pid==0){
+    std::string s;
+    s = "tapping.wav";
+    playmusic(s);
+  }
+
   // open and close finger
   for(int i = 0; i < 2; i++){
     segbot_arm_manipulation::moveFingers(100,5500);
@@ -575,14 +607,13 @@ int main(int argc, char **argv)
   segbot_arm_manipulation::moveFingers(5500,5500);   // close the hand
   move_home(n);
 
+  // play sound concurrently
   pid_t pid=fork();
-  if (pid==0)
-    {
-      // play sound
-      std::string s;
-      s = "i-am-ready-to-play.wav";
-      playmusic(s);
-    }
+  if (pid==0){
+    std::string s;
+    s = "i-am-ready-to-play.wav";
+    playmusic(s);
+  }
 
   // iterate through all the 9 grid squares.
   bool positions[9] = {};            // keeps track of random positions that have been chosen        
@@ -616,8 +647,14 @@ int main(int argc, char **argv)
     ROS_INFO("Moving to grid square %d", randNum);
     segbot_arm_manipulation::moveToPoseMoveIt(n,p_target);
 
+    // play sound
+    std::string s;
+    s = "place-my-block-here.wav";
+    playmusic(s);
+
     // move back home
     pressEnter("Press [Enter] to move arm back home");
+
     move_home(n);
   }
 
