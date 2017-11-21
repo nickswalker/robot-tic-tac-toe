@@ -4,7 +4,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
-
+#include <piece.h>
 using namespace cv;
 using namespace std;
 
@@ -53,6 +53,43 @@ bool notVerticalHorizontal(Vec2f &line) {
     return !isAlmostVerticalOrHorizontal(line);
 }
 
+vector<Piece> extractPieces() {
+
+}
+
+vector<Point> extractGridContour(vector<vector<Point> > contours, vector<Vec4i> hierarchy) {
+    // Get the moments
+    vector<Moments> mu(contours.size());
+    for(int i = 0; i < contours.size(); i++) {
+        mu[i] = moments(contours[i], false);
+    }
+
+    // Get the areas
+    vector<double> areas(contours.size());
+    vector<double> lengths(contours.size());
+    for(int i = 0; i < contours.size(); i++ ) {
+        areas[i] = contourArea(contours[i], false);
+        lengths[i] = arcLength(contours[i], false);
+    }
+
+    //  Get the mass centers:
+    vector<Point2f> mc(contours.size());
+    for (int i = 0; i < contours.size(); i++) {
+        mc[i] = Point2f(mu[i].m10 / mu[i].m00 , mu[i].m01 / mu[i].m00);
+    }
+
+    vector<Point> result;
+    double largest_yet = 0;
+    for(int i = 0; i < contours.size(); i++) {
+        double area = areas[i];
+        if (area < 1500. || area > 4000) continue;
+        if (area > largest_yet) {
+            result = contours[i];
+            largest_yet = area;
+        }
+    }
+    return result;
+}
 
 void lineToPoints(Vec2f &line, Mat &img, Point &p1, Point &p2) {
     float y = line[0];
@@ -101,6 +138,134 @@ void mergeRelatedLines(std::vector<Vec2f> &lines, Mat &img) {
             }
 
         }
+    }
+}
+
+void drawContours(Mat &img, vector<vector<Point> > &contours,  vector<Vec4i> &hierarchy, vector<Point2f> *centers = NULL) {
+    Scalar color(255, 0, 0);
+    // Draw contours
+    for(int i = 0; i < contours.size(); i++) {
+        drawContours( img, contours, i, color, 2, 8, hierarchy, 0, Point() );
+        if (centers != NULL) {
+            circle(img, (*centers)[i], 4, color, -1, 8, 0);
+        }
+    }
+
+}
+
+void drawCorners(Mat &img, Mat &cornerness) {
+    // Drawing a circle around corners
+    for( int j = 0; j < cornerness.rows ; j++ ) {
+        for( int i = 0; i < cornerness.cols; i++ ) {
+            if( (int) cornerness.at<float>(j,i) > 200 ) {
+                circle(img, Point(i, j), 5,  Scalar(0), 2, 8, 0);
+            }
+        }
+    }
+}
+
+void drawLines(Mat &img, vector<Vec2f> &lines) {
+    for (size_t i = 0; i < lines.size(); i++) {
+      float r = lines[i][0], t = lines[i][1];
+      double cos_t = cos(t), sin_t = sin(t);
+      double x0 = r * cos_t, y0 = r * sin_t;
+      double alpha = 1000;
+
+      Point pt1(cvRound(x0 + alpha * (-sin_t)), cvRound(y0 + alpha * cos_t));
+      Point pt2(cvRound(x0 - alpha * (-sin_t)), cvRound(y0 - alpha * cos_t));
+      line(img, pt1, pt2, Scalar(0, 255, 0), 3);
+    }
+}
+
+void detectCorners(Mat &img, vector<Vec2f> &lines){
+    /// Detector parameters
+    int blockSize = 2;
+    int apertureSize = 3;
+    double k = 0.08;
+    Mat corner, corner_norm;
+    /// Detecting corners
+    cornerHarris(img, corner, blockSize, apertureSize, k, BORDER_DEFAULT);
+    //kmeans();
+    /// Normalizing
+    double min, max;
+    cv::minMaxLoc(corner, &min, &max);
+    normalize(corner, corner_norm, 0, 255, NORM_MINMAX, CV_32FC1);
+    convertScaleAbs(corner_norm, corner);
+}
+
+void inspectContours(Mat &img, vector<Vec2f> &contours){
+    for (int i = 0; i < contours.size(); i++) {
+        Mat detections_img;
+        img.copyTo(detections_img);
+        polylines(detections_img, contours[i], false, Scalar(0,255,0));
+        imshow("detections_img", detections_img);
+        waitKey(3);
+    }
+}
+
+Mat rotate(double theta, Vec2f point) {
+    Mat rotation(2,2, CV_64F);
+    rotation.at<double>(0,0) = cos(theta);
+    rotation.at<double>(0,1) = -sin(theta);
+    rotation.at<double>(1,0) = sin(theta);
+    rotation.at<double>(1,1) = cos(theta);
+
+    Mat p(2, 1, CV_64F);
+    p.at<double>(0, 0) = point[0];
+    p.at<double>(0, 1) = point[1];
+    return rotation * p;
+}
+
+Mat pointToMat(Point2f point) {
+    Mat mat(2, 1, CV_64F);
+    mat.at<double>(0,0) = point.x;
+    mat.at<double>(1,0) = point.y;
+    return mat;
+}
+
+Point2f matToPoint(Mat mat) {
+    return Point2f(mat.at<double>(0), mat.at<double>(1));
+}
+
+vector<RotatedRect> produceGrid(RotatedRect &boundingBox) {
+    double theta = boundingBox.angle * CV_PI / 180.f;
+    if (theta < -CV_PI / 4) {
+        boundingBox.size = Size(boundingBox.size.height, boundingBox.size.width);
+        boundingBox.angle = boundingBox.angle + 90;
+        theta = boundingBox.angle * CV_PI / 180.f;
+    }
+    Mat toCorner = rotate(theta,Vec2f(boundingBox.size.width / 2, boundingBox.size.height / 2));
+    Mat origin = pointToMat(boundingBox.center);
+    Mat topLeft = origin - toCorner;
+
+    RotatedRect cell = boundingBox;
+    double cellWidth = boundingBox.size.width / 3;
+    double cellHeight = boundingBox.size.height / 3;
+    cell.size = Size(cellWidth, cellHeight);
+
+    // Vectors going off the top left corner along the principle axes
+    Mat halfDown = rotate(theta, Vec2f(0, cellHeight / 2));
+    Mat halfRight = rotate(theta, Vec2f(cellWidth / 2, 0));
+
+    vector<RotatedRect> result;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            Mat newCenter = topLeft + (halfRight * 2 * j) + (halfDown * 2 * i) + halfRight + halfDown;
+            cell.center = matToPoint(newCenter);
+            RotatedRect newCell = cell;
+            result.push_back(newCell);
+        }
+    }
+    return result;
+}
+
+void drawGrid(Mat &img, vector<RotatedRect> &cells){
+    for (vector<RotatedRect>::const_iterator i = cells.begin(); i < cells.end(); ++i) {
+        const RotatedRect &cell = *i;
+        Point2f vertices[4];
+        cell.points(vertices);
+        for (int v = 0; v < 4; v++)
+            line(img, vertices[v], vertices[(v+1) % 4], Scalar(0,255,0));
     }
 }
 

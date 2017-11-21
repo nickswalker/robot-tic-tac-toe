@@ -8,11 +8,35 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_processing.h>
 #include <algorithm>
+#include <piece.h>
+
 using namespace cv;
 
 SimpleBlobDetector *blobDetector;
 bool show_detections;
+RNG rng(12345);
 
+int lastObservedState[9];
+bool lastObservedWasValid = false;
+
+
+void assignPiecesToCells(vector<Piece> pieces, vector<RotatedRect> cells, int *dest) {
+    memset(dest,0,9);
+    Point2f vertices[4];
+    for (int i = 0; i < pieces.size(); i++) {
+        Piece currentPiece = pieces[i];
+        for (int j = 0; j < cells.size(); j++) {
+            RotatedRect cell = cells[j];
+            cell.points(vertices);
+            vector<Point2f> cellCorners(vertices, vertices + 4);
+            bool isInside = pointPolygonTest(cellCorners, currentPiece.center ,false) > 0;
+            if (isInside) {
+                dest[j] = currentPiece.team;
+                break;
+            }
+        }
+    }
+}
 
 void image_cb(const sensor_msgs::ImageConstPtr msg) {
     cv_bridge::CvImagePtr cv_ptr;
@@ -33,42 +57,51 @@ void image_cb(const sensor_msgs::ImageConstPtr msg) {
     filterChannel(blue, blue);
 
     // Storage for blobs
-    std::vector<KeyPoint> red_keypoints;
-    std::vector<KeyPoint> blue_keypoints;
+    vector<KeyPoint> red_keypoints;
+    vector<KeyPoint> blue_keypoints;
 
     // Detect blobs
     blobDetector->detect(red, red_keypoints);
     blobDetector->detect(blue, blue_keypoints);
 
+    vector<Piece> pieces;
+    for(vector<KeyPoint>::const_iterator i = red_keypoints.begin(); i < red_keypoints.end(); ++i){
+        pieces.push_back(Piece(RED,i->pt));
+    }
+    for(vector<KeyPoint>::const_iterator i = blue_keypoints.begin(); i < blue_keypoints.end(); ++i){
+        pieces.push_back(Piece(BLUE,i->pt));
+    }
+
     Mat edge;
-    inRange(hsv, Scalar(0, 0, 0), Scalar(180, 255, 80), grid);
+    cvtColor(img, grid, CV_BGR2GRAY);
+    //adaptiveThreshold(grid, grid, 255, CV_ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 55, 7);
+    threshold(grid, grid,0,255, CV_THRESH_OTSU);
+    //inRange(hsv, Scalar(0, 0, 0), Scalar(180, 255, 80), grid);
     //filterChannel(grid, grid);
     Canny(grid, edge, 50, 200, 3);
     //cvtColor(edge, edge, CV_GRAY2BGR);
-    vector<Vec2f> s_lines;
-    //HoughLines(edge, s_lines, 1, CV_PI / 180, 80, 0, 0);
-    //mergeRelatedLines(s_lines, img);
-    //s_lines.erase(std::remove_if(s_lines.begin(), s_lines.end(), notVerticalHorizontal), s_lines.end());
 
-    /// Detector parameters
-    int blockSize = 2;
-    int apertureSize = 3;
-    double k = 0.08;
-    Mat corner, corner_norm;
-    /// Detecting corners
-    //cornerHarris(edge, corner, blockSize, apertureSize, k, BORDER_DEFAULT);
-    //kmeans();
-    /// Normalizing
-    //double min, max;
-    //cv::minMaxLoc(corner, &min, &max);
-    //normalize(corner, corner_norm, 0, 255, NORM_MINMAX, CV_32FC1);
-    //convertScaleAbs(corner_norm, corner);
+
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
 
     /// Find contours
     findContours(edge, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
+    vector<Point> gridContour = extractGridContour(contours, hierarchy);
+    if (gridContour.size() == 0) {
+        lastObservedWasValid = false;
+        return;
+    }
+    // Get oriented bounding box
+    RotatedRect boundingBox = minAreaRect(gridContour);
+    RotatedRect gridBoundingBox = boundingBox;
+    gridBoundingBox.size = Size(gridBoundingBox.size.width * 3.5, gridBoundingBox.size.height * 3.5);
+
+    vector<RotatedRect> gridCells = produceGrid(gridBoundingBox);
+
+    assignPiecesToCells(pieces, gridCells, lastObservedState);
+    lastObservedWasValid = true;
     if (show_detections) {
         // Display preprocessed channels (for debugging)
         Mat display;
@@ -82,54 +115,13 @@ void image_cb(const sensor_msgs::ImageConstPtr msg) {
         imshow("edge_channel", edge);
 
         Mat detections_img;
-        drawKeypoints(img, red_keypoints, detections_img, Scalar(0, 0, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-        drawKeypoints(detections_img, blue_keypoints, detections_img, Scalar(255, 0, 0),
+        drawKeypoints(img, red_keypoints, detections_img, Scalar(255, 0, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+        drawKeypoints(detections_img, blue_keypoints, detections_img, Scalar(255, 255, 0),
                       DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 
-        /// Drawing a circle around corners
-        /*for( int j = 0; j < corner_norm.rows ; j++ ) {
-            for( int i = 0; i < corner_norm.cols; i++ ) {
-                if( (int) corner_norm.at<float>(j,i) > 200 ) {
-                    circle(detections_img, Point(i, j), 5,  Scalar(0), 2, 8, 0);
-                }
-            }
-        }*/
-        RNG rng(12345);
-        /// Get the moments
-        vector<Moments> mu(contours.size());
-        for( int i = 0; i < contours.size(); i++ )
-        { mu[i] = moments( contours[i], false ); }
-
-        /// Get the areas
-        vector<double> areas(contours.size());
-        for( int i = 0; i < contours.size(); i++ )
-        { areas[i] = contourArea( contours[i], false ); }
-
-        ///  Get the mass centers:
-        vector<Point2f> mc( contours.size() );
-        for( int i = 0; i < contours.size(); i++ )
-        { mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 ); }
-
-        /// Draw contours
-        for( int i = 0; i< contours.size(); i++ ) {
-            if(areas[i] <1000) continue;
-            Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-            drawContours( detections_img, contours, i, color, 2, 8, hierarchy, 0, Point() );
-            circle( detections_img, mc[i], 4, color, -1, 8, 0 );
-        }
-        /*
-        for (size_t i = 0; i < s_lines.size(); i++) {
-            float r = s_lines[i][0], t = s_lines[i][1];
-            double cos_t = cos(t), sin_t = sin(t);
-            double x0 = r * cos_t, y0 = r * sin_t;
-            double alpha = 1000;
-
-            Point pt1(cvRound(x0 + alpha * (-sin_t)), cvRound(y0 + alpha * cos_t));
-            Point pt2(cvRound(x0 - alpha * (-sin_t)), cvRound(y0 - alpha * cos_t));
-            line(detections_img, pt1, pt2, Scalar(0, 255, 0), 3);
-        }*/
-
-
+        //drawContours(detections_img, contours, hierarchy);
+        polylines(detections_img, gridContour, false, Scalar(0,255,0));
+        drawGrid(detections_img, gridCells);
         imshow("detections_img", detections_img);
         waitKey(3);
     }
@@ -158,7 +150,7 @@ int main(int argc, char **argv) {
     params.blobColor = 255;
 
     params.filterByArea = true;
-    params.minArea = 650;
+    params.minArea = 350;
     params.maxArea = 1500;
 
     params.filterByCircularity = true;
@@ -180,7 +172,14 @@ int main(int argc, char **argv) {
 
 
     while (ros::ok()) {
+        if (!lastObservedWasValid) {
+            ros::spinOnce();
+            continue;
+        }
         tic_tac_toe::GameState msg;
+        for (int i = 0; i < 9; i++) {
+            msg.board_state.push_back(lastObservedState[i]);
+        }
 
         state_pub.publish(msg);
 
