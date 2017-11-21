@@ -56,7 +56,7 @@ int scan(std::string dir, std::vector<std::string> &files)
 //Open vlc 
 int playmusic(std::string idx)
 {
-    std::string dir = "./src/hri/tic_tac_toe/src/", cmd = "cvlc";
+    std::string dir = "./src/hri/tic_tac_toe/sounds", cmd = "mplayer";
     std::vector<std::string> files, vfiles;
 
     scan(dir, files);
@@ -79,8 +79,6 @@ int playmusic(std::string idx)
     system(cmd.c_str());
 
     return 0;
-
-
 }
 
 
@@ -154,6 +152,7 @@ void pressEnter(std::string message){
 bool execute_cb(tic_tac_toe::ExecuteGameAction::Request  &req,
          tic_tac_toe::ExecuteGameAction::Response &res)
 {
+  printf("output = %d\n", req.action_location);
   return true;
 }
 
@@ -571,15 +570,19 @@ int main(int argc, char **argv)
       
   listenForArmData();
 
-  // play sound
-  std::string s;
-  s = "haha.m4a";
-  playmusic(s);
-
   // close hand and move home
   pressEnter("Press [Enter] to close the hand and move home."); 
   segbot_arm_manipulation::moveFingers(5500,5500);   // close the hand
   move_home(n);
+
+  pid_t pid=fork();
+  if (pid==0)
+    {
+      // play sound
+      std::string s;
+      s = "i-am-ready-to-play.wav";
+      playmusic(s);
+    }
 
   // iterate through all the 9 grid squares.
   bool positions[9] = {};            // keeps track of random positions that have been chosen        
