@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(tic_tac_toe)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   actionlib
@@ -28,67 +25,32 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
 find_package(PCL 1.7 REQUIRED)
 
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
+
 catkin_python_setup()
 
-################################################
-## Declare ROS messages, services and actions ##
-################################################
 
-## Generate messages in the 'msg' folder
 add_message_files(
     FILES
     GameState.msg
  )
 
-## Generate services in the 'srv' folder
 add_service_files(
    FILES
    ExecuteGameAction.srv
 )
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
-
-## Generate added messages and services with any dependencies listed here
 generate_messages(
    DEPENDENCIES
    std_msgs
  )
 
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
         INCLUDE_DIRS include
-  CATKIN_DEPENDS geometry_msgs roscpp rospy sensor_msgs std_msgs
-  #DEPENDS system_lib
+  CATKIN_DEPENDS geometry_msgs roscpp rospy sensor_msgs std_msgs segbot_arm_manipulation
 )
 
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
@@ -113,7 +75,10 @@ elseif(CMAKE_BUILD_TYPE MATCHES Release)
  target_compile_definitions(game_state_detector_cli PUBLIC DEBUG=0)
 endif()
 
-add_executable(action_executor src/action_executor.cpp)
+add_executable(action_executor src/action_executor.cpp src/MicoIdleBehavior.cpp src/sound.cpp src/utils.cpp include/tic_tac_toe/utils.h)
 add_dependencies(action_executor tic_tac_toe_generate_messages_cpp)
 target_link_libraries(action_executor ${catkin_LIBRARIES})
 
+add_executable(action_tester src/action_tester.cpp src/MicoIdleBehavior.cpp src/sound.cpp src/utils.cpp include/tic_tac_toe/utils.h)
+add_dependencies(action_tester tic_tac_toe_generate_messages_cpp)
+target_link_libraries(action_tester ${catkin_LIBRARIES})

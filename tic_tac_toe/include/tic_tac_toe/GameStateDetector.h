@@ -5,7 +5,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
 
-typedef struct Piece;
+struct Piece;
 using namespace cv;
 using namespace std;
 
@@ -27,7 +27,7 @@ public:
         params.blobColor = 255;
 
         params.filterByArea = true;
-        params.minArea = 350;
+        params.minArea = 150;
         params.maxArea = 1500;
 
         params.filterByCircularity = true;

@@ -6,7 +6,6 @@
 #include <opencv2/features2d/features2d.hpp>
 
 using namespace cv;
-using namespace std;
 
 
 void drawContours(Mat &img, vector<vector<Point> > &contours,  vector<Vec4i> &hierarchy, vector<Point2f> *centers = NULL) {

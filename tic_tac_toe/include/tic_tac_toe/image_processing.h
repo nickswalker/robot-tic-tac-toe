@@ -4,7 +4,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
-#include <piece.h>
+#include <tic_tac_toe/piece.h>
 using namespace cv;
 using namespace std;
 
@@ -204,9 +204,11 @@ vector<RotatedRect> produceGrid(RotatedRect &boundingBox) {
 }
 
 vector<Piece> extractPieces(const Mat &img, SimpleBlobDetector &blobDetector) {
-    Mat hsv, red, blue, grid;
+    Mat hsv, red, blue, grid, mask;
     cvtColor(img, hsv, CV_BGR2HSV);
+    inRange(hsv, Scalar(160, 50, 50), Scalar(180, 255, 255), mask);
     inRange(hsv, Scalar(0, 50, 50), Scalar(20, 255, 255), red);
+    red |= mask;
     inRange(hsv, Scalar(100, 50, 50), Scalar(125, 255, 255), blue);
 
     filterChannel(red, red);

@@ -1,7 +1,10 @@
-#include <piece.h>
-#include <image_processing.h>
-#include <drawing_helpers.h>
-#include "GameStateDetector.h"
+#include <tic_tac_toe/piece.h>
+#include <tic_tac_toe/GameStateDetector.h>
+#include <tic_tac_toe/image_processing.h>
+#include <tic_tac_toe/drawing_helpers.h>
+
+using namespace cv;
+using namespace std;
 
 void GameStateDetector::assignPiecesToCells(vector<Piece> pieces, vector<RotatedRect> cells, int *dest) {
     memset(dest,0,9 * sizeof(int));
@@ -22,8 +25,6 @@ void GameStateDetector::assignPiecesToCells(vector<Piece> pieces, vector<Rotated
 }
 
 void GameStateDetector::detect(const Mat &img) {
-
-
     vector<Piece> pieces = extractPieces(img, blobDetector);
 
     vector<RotatedRect> gridCells = extractGrid(img);

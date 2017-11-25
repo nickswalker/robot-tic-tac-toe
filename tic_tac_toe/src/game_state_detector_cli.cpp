@@ -4,7 +4,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <GameStateDetector.h>
+#include <tic_tac_toe/GameStateDetector.h>
 
 
 using namespace cv;
