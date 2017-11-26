@@ -1,9 +1,16 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="condition" default="0"/>
+    <arg name="simulation" default="false" />
+    <arg name="condition" default="0"/>
 
-  <node name="game_state_detector" pkg="tic_tac_toe" type="game_state_detector" required="true" />
-  <node name="action_executor" pkg="tic_tac_toe" type="action_executor" required="true" />
-  <node name="interaction_manager" pkg="tic_tac_toe" type="interaction_manager" required="true" />
+    <include if="$(arg simulation)" file="$(find usb_cam)/launch/usb_cam-test.launch" />
+    <node name="game_state_detector" pkg="tic_tac_toe" type="game_state_detector" required="true">
+        <param if="$(arg simulation)" name="camera_topic" value="/usb_cam/image_raw" />
+        <param unless="$(arg simulation)" name="camera_topic" value="/xtion/depth_registered/image_raw" />
+    </node>
+    <node name="action_executor" pkg="tic_tac_toe" type="action_executor" required="true">
+        <param name="simulation" value="$(arg simulation)" />
+    </node>
+    <node name="interaction_manager" pkg="tic_tac_toe" type="interaction_manager" required="true" />
 </launch>
 
