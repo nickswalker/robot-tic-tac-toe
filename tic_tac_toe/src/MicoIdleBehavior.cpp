@@ -143,6 +143,7 @@ MicoIdleBehavior::MicoIdleBehavior(ros::NodeHandle n, MicoManager *manager) {
 void MicoIdleBehavior::point(uint8_t grid_square) {
 
     mico->move_to_pose_moveit(array_to_pose(grid_cell_poses[grid_square]));
+    play_file("place-my-block-here.wav");
 }
 
 void MicoIdleBehavior::scratch_chin() {
