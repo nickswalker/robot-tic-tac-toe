@@ -155,16 +155,19 @@ int main(int argc, char **argv) {
 
     mico->wait_for_data();
 
-    geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     // close hand and move home
-    pressEnter("Press [Enter] to close the hand and move home.");
-    mico->close_hand();
+    pressEnter("Press [Enter] to close hand and move to ready position.");
+    mico->move_fingers(5500, 5500); 
+    geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     mico->move_to_pose_moveit(ready_pose);
 
     srand(time(0));
     while (ros::ok()) {
-        uint8_t behavior = rand() % 4;
-        uint8_t dest = rand() % 10;
+        pressEnter("Press [Enter] to make next move.");
+
+        uint32_t behavior = rand() % 4;
+        uint32_t dest = rand() % 9;
+
         // run the idle bahavior based on the current iteration
         if (behavior == 0) {
             ROS_INFO("Incremental");
@@ -181,13 +184,11 @@ int main(int argc, char **argv) {
         }
 
         // move to grid coordinate
-        pressEnter("Press [Enter] to move to next grid coordinate");
-        ROS_INFO("Moving to grid square %d", dest);
+        ROS_INFO("Moving to grid square %d.", dest);
         idleBehavior.point(dest);
 
         // move back home
-        pressEnter("Press [Enter] to move arm back to ready");
-
+        pressEnter("Press [Enter] to move arm back to ready position.");
         mico->move_to_pose_moveit(ready_pose);
     }
 
