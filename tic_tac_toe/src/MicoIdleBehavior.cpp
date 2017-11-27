@@ -133,7 +133,7 @@ double incremental_start_pose[] = {0.311155617237,
                                    0.00926198810339,
                                    0.0010175104253};
 
-
+MicoIdleBehavior::MicoIdleBehavior(){};
 
 MicoIdleBehavior::MicoIdleBehavior(ros::NodeHandle n, MicoManager *manager) {
     mico = manager;
