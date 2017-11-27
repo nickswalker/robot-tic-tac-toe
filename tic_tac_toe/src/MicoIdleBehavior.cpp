@@ -133,7 +133,7 @@ double incremental_start_pose[] = {0.311155617237,
                                    0.00926198810339,
                                    0.0010175104253};
 
-
+MicoIdleBehavior::MicoIdleBehavior(){};
 
 MicoIdleBehavior::MicoIdleBehavior(ros::NodeHandle n, MicoManager *manager) {
     mico = manager;
@@ -275,7 +275,7 @@ void MicoIdleBehavior::move_exaggerated() {
     msg.joint5 = 0.0;
     msg.joint6 = 45;
 
-    double duration = 5;  // 5 seconds
+    double duration = 8;  // 8 seconds
     double elapsed_time = 0.0;
     double pub_rate = 100.0;
     ros::Rate r(pub_rate);
