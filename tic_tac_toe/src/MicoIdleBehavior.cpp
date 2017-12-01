@@ -223,7 +223,7 @@ void MicoIdleBehavior::move_incremental(int dest) {
     }
 
     msg.joint5 = -45;
-    duration = 1.2;  // 1.2 seconds
+    duration = 1.5;  // 1.5 seconds
     elapsed_time = 0.0;
 
     while (ros::ok()) {
@@ -296,6 +296,8 @@ void MicoIdleBehavior::move_exaggerated() {
     }
     msg.joint6 = 0;
     mico->angular_velocity_pub.publish(msg);
+
+    play_file_non_blocking("stretch.wav");
 
     // open and close finger
     mico->move_fingers(100, 100);
