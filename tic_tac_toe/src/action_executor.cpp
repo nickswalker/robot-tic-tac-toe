@@ -52,6 +52,12 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
                 tic_tac_toe::ExecuteGameAction::Response &res) {
     printf("Received a new message, req.action_location = %d\n", req.action_location);
 
+    if(req.action_location == -1){ // human has won already, or game is scratch
+      // TODO play sound effect "good game"
+
+      // TODO break or exit from game
+    }
+
     // choose a random behavior that has not been encountered yet
     uint32_t behavior;
     do{
