@@ -2,6 +2,7 @@
 import rospy
 
 from tic_tac_toe.srv import *
+from tic_tac_toe import game_agent
 from tic_tac_toe import state_estimation
 
 if __name__ == "__main__":
@@ -16,11 +17,13 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
 
         # Get game state from vision and detect change
-        state_estimator.state_change_flag.acquire()
+        #state_estimator.state_change_flag.acquire()
+        
         # Calculate move
         move = 0
-        # move = tic_tac_toe.game_agent.getMove(board, computerLetter-either 1 or 2)
+        move = game_agent.getMove((0, 0, 0, 0, 0, 0, 0, 0, 0), 1) # 0=blank, 1=robot, 2=human
         # If game is done, end
         if move == -1:
             pass  # end
         executor(move)
+        break
