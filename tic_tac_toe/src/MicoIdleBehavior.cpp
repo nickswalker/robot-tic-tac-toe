@@ -4,6 +4,7 @@
 #include <segbot_arm_manipulation/MicoManager.h>
 #include <tic_tac_toe/sound.h>
 #include <tic_tac_toe/utils.h>
+#include <unistd.h>
 
 double grid_cell_poses[][7] = {{0.426824212074,
                                        0.284858942032,
@@ -141,9 +142,11 @@ MicoIdleBehavior::MicoIdleBehavior(ros::NodeHandle n, MicoManager *manager) {
 }
 
 void MicoIdleBehavior::point(uint8_t grid_square) {
+    play_file_non_blocking("hmm.wav");
+    sleep (5);
 
     mico->move_to_pose_moveit(array_to_pose(grid_cell_poses[grid_square]));
-    play_file("place-my-block-here.wav");
+    play_file_non_blocking("place-my-block-here.wav");
 }
 
 void MicoIdleBehavior::scratch_chin() {
@@ -350,4 +353,9 @@ void MicoIdleBehavior::tap_fingers() {
     p_target.pose.position.z += 0.1;
     p_target.pose.position.y += 0.1;
     mico->move_to_pose_moveit(p_target);
+}
+
+void MicoIdleBehavior::game_over() {
+    ROS_INFO("Game Over");
+    play_file("good-game.wav");
 }

@@ -13,6 +13,7 @@ public:
     void move_exaggerated();
     void tap_fingers();
     void point(uint8_t grid_square);
+    void game_over();
 };
 
 #endif
