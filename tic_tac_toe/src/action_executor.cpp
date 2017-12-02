@@ -84,13 +84,16 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
            idleBehavior.move_exaggerated();
        }
     }
+    else{
+      play_file_non_blocking("thinking.wav");
+      sleep(5);
+    }
 
     // move to grid coordinate
     ROS_INFO("Moving to grid square %d.", req.action_location);
     idleBehavior.point(req.action_location);
 
-    // move back to ready position
-    pressEnter("Press [Enter] to end robot's turn.");
+    // move back to ready position 
     geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     mico->move_to_pose_moveit(ready_pose);
 
