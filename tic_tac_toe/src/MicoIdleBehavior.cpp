@@ -134,9 +134,8 @@ double incremental_start_pose[] = {0.311155617237,
                                    0.00926198810339,
                                    0.0010175104253};
 
-MicoIdleBehavior::MicoIdleBehavior(){};
 
-MicoIdleBehavior::MicoIdleBehavior(ros::NodeHandle n, MicoManager *manager) {
+MicoIdleBehavior::MicoIdleBehavior(MicoManager *manager) {
     mico = manager;
 
 }
@@ -197,65 +196,17 @@ void MicoIdleBehavior::move_incremental(int dest) {
 
     kinova_msgs::JointAngles msg;
     // wave wrist around twice
-    msg.joint1 = 0.0;
-    msg.joint2 = 0.0;
-    msg.joint3 = 0.0;
-    msg.joint4 = 0.0;
     msg.joint5 = 45;
-    msg.joint6 = 0.0;
-
-    double duration = 0.75;  // 0.75 seconds
-    double elapsed_time = 0.0;
-    double pub_rate = 100.0;
-    ros::Rate r(pub_rate);
 
     play_file_non_blocking("maybe-here-or-maybe-here.wav");
-    while (ros::ok()) {
-        //collect messages
-        ros::spinOnce();
 
-        //publish velocity message
-        mico->angular_velocity_pub.publish(msg);
-        r.sleep();
-        elapsed_time += (1.0 / pub_rate);
-        if (elapsed_time > duration) {
-            break;
-        }
-    }
+    mico->move_with_angular_velocities(msg, 0.75);
 
     msg.joint5 = -45;
-    duration = 1.5;  // 1.5 seconds
-    elapsed_time = 0.0;
-
-    while (ros::ok()) {
-        //collect messages
-        ros::spinOnce();
-
-        //publish velocity message
-        mico->angular_velocity_pub.publish(msg);
-        r.sleep();
-        elapsed_time += (1.0 / pub_rate);
-        if (elapsed_time > duration) {
-            break;
-        }
-    }
+    mico->move_with_angular_velocities(msg, 1.5);
 
     msg.joint5 = 45;
-    duration = 0.75;  // 0.75 seconds
-    elapsed_time = 0.0;
-
-    while (ros::ok()) {
-        //collect messages
-        ros::spinOnce();
-
-        //publish velocity message
-        mico->angular_velocity_pub.publish(msg);
-        r.sleep();
-        elapsed_time += (1.0 / pub_rate);
-        if (elapsed_time > duration) {
-            break;
-        }
-    }
+    mico->move_with_angular_velocities(msg, 0.75);
 
     //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
     msg.joint5 = 0;
@@ -269,40 +220,17 @@ void MicoIdleBehavior::move_exaggerated() {
 
     // rotate wrist around
     kinova_msgs::JointAngles msg;
-    msg.joint1 = 0.0;
-    msg.joint2 = 0.0;
-    msg.joint3 = 0.0;
-    msg.joint4 = 0.0;
-    msg.joint5 = 0.0;
     msg.joint6 = 45;
-
-    double duration = 8;  // 8 seconds
-    double elapsed_time = 0.0;
-    double pub_rate = 100.0;
-    ros::Rate r(pub_rate);
 
     play_file_non_blocking("wind-up.wav");
 
-    while (ros::ok()) {
-        //collect messages
-        ros::spinOnce();
-
-        //publish velocity message
-        mico->angular_velocity_pub.publish(msg);
-        r.sleep();
-        elapsed_time += (1.0 / pub_rate);
-        if (elapsed_time > duration) {
-            break;
-        }
-    }
-    msg.joint6 = 0;
-    mico->angular_velocity_pub.publish(msg);
+    mico->move_with_angular_velocities(msg, 8);
 
     play_file_non_blocking("stretch.wav");
 
     // open and close finger
-    mico->move_fingers(100, 100);
-    mico->move_fingers(5500, 5500);
+    mico->move_fingers(100);
+    mico->move_fingers(5500);
 
 }
 
@@ -313,31 +241,9 @@ void MicoIdleBehavior::tap_fingers() {
 
     // rotate wrist into position
     kinova_msgs::JointAngles msg;
-    msg.joint1 = 0.0;
-    msg.joint2 = 0.0;
-    msg.joint3 = 0.0;
-    msg.joint4 = 0.0;
-    msg.joint5 = 0.0;
     msg.joint6 = 45;
 
-    double duration = 2.5;  // 0.75 seconds
-    double elapsed_time = 0.0;
-    double pub_rate = 100.0;
-    ros::Rate r(pub_rate);
-
-    while (ros::ok()) {
-        //collect messages
-        ros::spinOnce();
-
-        //publish velocity message
-        mico->angular_velocity_pub.publish(msg);
-        r.sleep();
-        elapsed_time += (1.0 / pub_rate);
-        if (elapsed_time > duration) {
-            break;
-        }
-    }
-
+    mico->move_with_angular_velocities(msg, 2.5);
     play_file_non_blocking("tapping.wav");
 
     // open and close finger

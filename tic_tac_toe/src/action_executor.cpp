@@ -4,27 +4,26 @@
 #include <sstream>
 #include "ros/ros.h"
 #include "tic_tac_toe/ExecuteGameAction.h"
-#include "tic_tac_toe/MicoIdleBehavior.h"
 #include <tic_tac_toe/sound.h>
 #include <ros/package.h>
 #include <signal.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <kinova_msgs/FingerPosition.h>
-#include <unistd.h>
 
 #include <segbot_arm_manipulation/MicoManager.h>
 #include <tic_tac_toe/utils.h>
+#include <tic_tac_toe/MicoIdleBehavior.h>
 
 MicoManager *mico;
-MicoIdleBehavior idleBehavior;
+MicoIdleBehavior* idleBehavior;
 
 //true if Ctrl-C is pressed
 bool g_caught_sigint = false;
 
-bool used_behaviors[4] = {}; // keeps track of random behaviors that have been chosen        
+bool used_behaviors[4] = {}; // keeps track of random behaviors that have been chosen
 
-bool run_idle_behaviors = true; // Whether to add idle behaviors, true = add idle behaviors 
+bool run_idle_behaviors = true; // Whether to add idle behaviors, true = add idle behaviors
 
 /* what happens when ctr-c is pressed */
 void sig_handler(int sig) {
@@ -57,7 +56,7 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
     printf("Received a new message, req.action_location = %d\n", req.action_location);
 
     if(req.action_location == -1){ // human has won already, or game is scratch
-      idleBehavior.game_over();
+      idleBehavior->game_over();
       exit(0);                     // exit since game is over
     }
 
@@ -67,21 +66,21 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
       behavior = rand() % 4;
     } while(used_behaviors[behavior] == true);
     used_behaviors[behavior] = true;
-    
+
     if(run_idle_behaviors){
        // run chosen idle behavior
        if (behavior == 0) {
            ROS_INFO("Incremental");
-           idleBehavior.move_incremental(req.action_location);
+           idleBehavior->move_incremental(req.action_location);
        } else if (behavior == 1 ) {
            ROS_INFO("Tap");
-           idleBehavior.tap_fingers();
+           idleBehavior->tap_fingers();
        } else if (behavior == 2) {
            ROS_INFO("Scratch");
-           idleBehavior.scratch_chin();
+           idleBehavior->scratch_chin();
        } else if (behavior == 3) {
            ROS_INFO("Exaggerate");
-           idleBehavior.move_exaggerated();
+           idleBehavior->move_exaggerated();
        }
     }
     else{
@@ -91,9 +90,9 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
 
     // move to grid coordinate
     ROS_INFO("Moving to grid square %d.", req.action_location);
-    idleBehavior.point(req.action_location);
+    idleBehavior->point(req.action_location);
 
-    // move back to ready position 
+    // move back to ready position
     geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     mico->move_to_pose_moveit(ready_pose);
 
@@ -110,7 +109,7 @@ int main(int argc, char **argv) {
 
     //create subscribers for arm topics
     mico = new MicoManager(n);
-    idleBehavior = MicoIdleBehavior(n, mico);
+    idleBehavior = new MicoIdleBehavior(mico);
     //register ctrl-c
     signal(SIGINT, sig_handler);
 
@@ -120,10 +119,10 @@ int main(int argc, char **argv) {
     // prompt user to determine if idle behaviors should be turned on
     std::cout << "Please enter your game mode (0 or 1): ";   // 1 = with idle behavior, 0 = no idle behavior
     std::cin >> run_idle_behaviors;
-    
+
     // close hand and move to ready position
     ROS_INFO("Closing hand and moving to ready position.");
-    mico->move_fingers(5500, 5500); 
+    mico->move_fingers(5500, 5500);
     geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     mico->move_to_pose_moveit(ready_pose);
 

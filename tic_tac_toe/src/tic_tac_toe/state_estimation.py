@@ -1,5 +1,3 @@
-import sys
-
 import datetime
 import rospy
 
@@ -7,14 +5,15 @@ import tic_tac_toe.game_agent
 import time
 from tic_tac_toe.msg import GameState
 
-from threading import Semaphore, Thread
+from threading import Event, Thread
 from Queue import Queue
 
 IGNORE_EVENTS_LESS_THAN = 1
 
 class StateEstimator:
     def __init__(self, game_state_topic):
-        self.state_change_flag = Semaphore(0)
+        self.state_change_event = Event()
+        self.should_listen_for_state = True
         self.observation_queue = Queue()
         self.state_estimate = None
         self.state_estimate_started_stamp = None
@@ -31,6 +30,8 @@ class StateEstimator:
     def process_game_state(self):
         while not rospy.is_shutdown():
             observation = self.observation_queue.get(True)
+            if not self.should_listen_for_state:
+                continue
             if observation != self.state_estimate:
                 if observation != self.candidate_state:
                     self.candidate_state = observation
@@ -39,7 +40,8 @@ class StateEstimator:
                     self.state_estimate = observation
                     self.state_estimate_started_stamp = datetime.datetime.now()
                     rospy.loginfo("Detected transition to configuration {}".format(self.state_estimate))
-                    self.state_change_flag.release()
+                    self.state_change_event.set()
+                    self.state_change_event.clear()
             else:
                 self.candidate_state = None
                 self.candidate_state_started_stamp = None

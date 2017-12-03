@@ -6,8 +6,7 @@ class MicoManager;
 class MicoIdleBehavior {
     MicoManager *mico;
 public:
-    MicoIdleBehavior();
-    MicoIdleBehavior(ros::NodeHandle n, MicoManager* manager);
+    MicoIdleBehavior(MicoManager* manager);
     void scratch_chin();
     void move_incremental(int dest);
     void move_exaggerated();

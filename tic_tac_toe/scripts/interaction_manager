@@ -1,29 +1,34 @@
 #!/usr/bin/env python
 import rospy
 
-from tic_tac_toe.srv import *
-from tic_tac_toe import game_agent
+import tic_tac_toe.game_agent
+from tic_tac_toe.msg import GameState
+from tic_tac_toe.srv import ExecuteGameAction
 from tic_tac_toe import state_estimation
 
 if __name__ == "__main__":
     rospy.init_node("interaction_manager")
-    rospy.loginfo("Waiting for topics and services...")
-    rospy.wait_for_service('execute_game_action')
+    rospy.loginfo("Waiting for messages and services...")
+    while not rospy.is_shutdown():
+        received = rospy.wait_for_service('execute_game_action', 10)
+        received &= rospy.wait_for_message("game_state", GameState, 10)
+        if received:
+            break
+        else:
+            rospy.logwarn("Couldn't get messages and service handles. Retrying...")
     executor = rospy.ServiceProxy('execute_game_action', ExecuteGameAction)
     state_estimator = state_estimation.StateEstimator("game_state")
 
     rospy.loginfo("Ready")
 
     while not rospy.is_shutdown():
-
-        # Get game state from vision and detect change
-        #state_estimator.state_change_flag.acquire()
-        
+        # Detect change
+        state_estimator.state_change_event.wait()
+        state_estimator.should_listen_for_state = False
         # Calculate move
-        move = 0
-        move = game_agent.getMove((0, 0, 0, 0, 0, 0, 0, 0, 0), 1) # 0=blank, 1=robot, 2=human
+        move = tic_tac_toe.game_agent.getMove(state_estimator.state_estimate, 1)
         # If game is done, end
         if move == -1:
-            pass  # end
+            break
         executor(move)
-        break
+        state_estimator.should_listen_for_state = True
