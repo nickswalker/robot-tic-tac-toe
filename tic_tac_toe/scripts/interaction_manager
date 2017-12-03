@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-
+import sys
 import tic_tac_toe.game_agent
 from tic_tac_toe.msg import GameState
 from tic_tac_toe.srv import ExecuteGameAction
@@ -10,17 +10,23 @@ if __name__ == "__main__":
     rospy.init_node("interaction_manager")
     rospy.loginfo("Waiting for messages and services...")
     while not rospy.is_shutdown():
-        received = rospy.wait_for_service('execute_game_action', 10)
-        received &= rospy.wait_for_message("game_state", GameState, 10)
-        if received:
-            break
-        else:
+        try:
+            rospy.wait_for_service('execute_game_action', 10)
+            received = rospy.wait_for_message("game_state", GameState, 10)
+            if received is not None:
+                break
+            else:
+                rospy.logwarn("Couldn't get messages and service handles. Retrying...")
+        except ROSException as e:
             rospy.logwarn("Couldn't get messages and service handles. Retrying...")
+        
     executor = rospy.ServiceProxy('execute_game_action', ExecuteGameAction)
     state_estimator = state_estimation.StateEstimator("game_state")
 
     rospy.loginfo("Ready")
-
+    rospy.loginfo("Press enter to begin")
+    _ = raw_input()
+    state_estimator.should_listen_for_state = True
     while not rospy.is_shutdown():
         # Detect change
         state_estimator.state_change_event.wait()

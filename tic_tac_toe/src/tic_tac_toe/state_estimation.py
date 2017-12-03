@@ -13,7 +13,7 @@ IGNORE_EVENTS_LESS_THAN = 1
 class StateEstimator:
     def __init__(self, game_state_topic):
         self.state_change_event = Event()
-        self.should_listen_for_state = True
+        self.should_listen_for_state = False
         self.observation_queue = Queue()
         self.state_estimate = None
         self.state_estimate_started_stamp = None

@@ -57,17 +57,17 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
 
     if(req.action_location == -1){ // human has won already, or game is scratch
       idleBehavior->game_over();
-      exit(0);                     // exit since game is over
+      return true;
     }
 
-    // choose a random behavior that has not been encountered yet
-    uint32_t behavior;
-    do{
-      behavior = rand() % 4;
-    } while(used_behaviors[behavior] == true);
-    used_behaviors[behavior] = true;
-
     if(run_idle_behaviors){
+        // choose a random behavior that has not been encountered yet
+        uint32_t behavior;
+        do{
+          behavior = rand() % 4;
+        } while(used_behaviors[behavior] == true);
+        used_behaviors[behavior] = true;
+
        // run chosen idle behavior
        if (behavior == 0) {
            ROS_INFO("Incremental");
@@ -104,6 +104,7 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
 int main(int argc, char **argv) {
     ros::init(argc, argv, "action_executor");
     ros::NodeHandle n;
+    ros::NodeHandle ph("~");
 
     ros::ServiceServer service = n.advertiseService("execute_game_action", execute_cb);
 
@@ -115,11 +116,12 @@ int main(int argc, char **argv) {
 
     mico->wait_for_data();
 
-
-    // prompt user to determine if idle behaviors should be turned on
-    std::cout << "Please enter your game mode (0 or 1): ";   // 1 = with idle behavior, 0 = no idle behavior
-    std::cin >> run_idle_behaviors;
-
+    bool success = ph.getParam("use_idle_behaviors", run_idle_behaviors);
+    if (!success) {
+        ROS_ERROR("Pass the use_idle_behaviors parameter");        
+        exit(1);
+    }
+    ROS_INFO("use_idle_behaviors is %s", run_idle_behaviors ? "true" : "false");
     // close hand and move to ready position
     ROS_INFO("Closing hand and moving to ready position.");
     mico->move_fingers(5500, 5500);
