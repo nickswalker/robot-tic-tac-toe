@@ -109,11 +109,12 @@ if __name__ == "__main__":
         if current_turn == robot_color:
             # Calculate move
             move = tic_tac_toe.game_agent.getMove(state, robot_color)
-            # If game is done, end
-            if move == -1:
+            continue_game = executor(move)
+            
+            # If game is done, end          
+            if continue_game == False:
                 print("game done")
                 break
-            executor(move)
         else:
             rospy.loginfo("Detected my own move")
 

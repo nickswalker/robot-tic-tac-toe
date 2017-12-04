@@ -57,7 +57,7 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
 
     if(req.action_location == -1){ // human has won already, or game is scratch
       idleBehavior->game_over();
-      return true;
+      return false;
     }
 
     if(run_idle_behaviors){
