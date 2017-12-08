@@ -135,33 +135,29 @@ double incremental_start_pose[] = {0.311155617237,
                                    0.0010175104253};
 
 
-MicoIdleBehavior::MicoIdleBehavior(MicoManager *manager) {
-    mico = manager;
-
-}
-
-void MicoIdleBehavior::point(uint8_t grid_square) {
+void MicoIdleBehavior::point(uint8_t grid_square, int target_duration) {
     mico->move_to_pose_moveit(array_to_pose(grid_cell_poses[grid_square]));
     play_file("place-my-block-here.wav");
-    sleep(3);
+    ros::Duration(3).sleep();
 }
 
-void MicoIdleBehavior::scratch_chin() {
+void MicoIdleBehavior::scratch_chin(int target_duration) {
+    ros::Time start_stamp = ros::Time::now();
+    ros::Duration target(target_duration);
     // move arm to head
     mico->move_to_pose_moveit(array_to_pose(chin_pose));
 
     play_file_non_blocking("hmm.wav");
     // scratch chin
-    for (int i = 0; i < 2; i++) {
+    while (ros::Time::now() - start_stamp < target) {
         mico->move_fingers(100, 100);
         mico->move_fingers(5500, 5500);
     }
 }
 
-void MicoIdleBehavior::move_incremental(int dest) {
-
-    // set coordinates for arm
-
+void MicoIdleBehavior::move_incremental(int dest, int target_duration) {
+    ros::Time start_stamp = ros::Time::now();
+    ros::Duration target(target_duration);
     // move arm to incremental start position
     mico->move_to_pose_moveit(array_to_pose(incremental_start_pose));
     uint8_t quadrant;
@@ -195,47 +191,47 @@ void MicoIdleBehavior::move_incremental(int dest) {
     mico->move_to_pose_moveit(array_to_pose(quadrant_approach_poses[quadrant]));
 
     kinova_msgs::JointAngles msg;
-    // wave wrist around twice
-    msg.joint5 = 45;
-
     play_file_non_blocking("maybe-here-or-maybe-here.wav");
+    while (ros::Time::now() - start_stamp < target) {
+        // wave wrist around
+        msg.joint5 = 20;
+        mico->move_with_angular_velocities(msg, 1.25);
+        ros::Duration(.75).sleep();
+        msg.joint5 = -20;
+        mico->move_with_angular_velocities(msg, 1.25);
 
-    mico->move_with_angular_velocities(msg, 0.75);
+    }
 
-    msg.joint5 = -45;
-    mico->move_with_angular_velocities(msg, 1.5);
-
-    msg.joint5 = 45;
-    mico->move_with_angular_velocities(msg, 0.75);
-
-    //publish 0 velocity command -- otherwise arm will continue moving with the last command for 0.25 seconds
-    msg.joint5 = 0;
-    mico->angular_velocity_pub.publish(msg);
 }
 
-void MicoIdleBehavior::move_exaggerated() {
-
+void MicoIdleBehavior::move_exaggerated(int target_duration) {
+    ros::Time start_stamp = ros::Time::now();
+    ros::Duration target(target_duration);
     // move to exaggerated staging position
     mico->move_to_pose_moveit(array_to_pose(exaggerated_staging_pose));
+
+    play_file_non_blocking("wind-up.wav");
 
     // rotate wrist around
     kinova_msgs::JointAngles msg;
     msg.joint6 = 45;
-
-    play_file_non_blocking("wind-up.wav");
-
     mico->move_with_angular_velocities(msg, 8);
 
     play_file_non_blocking("stretch.wav");
 
-    // open and close finger
-    mico->move_fingers(100);
-    mico->move_fingers(5500);
+    mico->move_fingers(500, 500);
+    while (ros::Time::now() - start_stamp < target) {
+        // open and close finger
+        mico->move_fingers(500, 1000);
+        mico->move_fingers(1000, 500);
+    }
+    mico->close_hand();
 
 }
 
-void MicoIdleBehavior::tap_fingers() {
-
+void MicoIdleBehavior::tap_fingers(int target_duration) {
+    ros::Time start_stamp = ros::Time::now();
+    ros::Duration target(target_duration);
     // move to tapping staging position
     mico->move_to_pose_moveit(array_to_pose(tap_pose));
 
@@ -247,7 +243,7 @@ void MicoIdleBehavior::tap_fingers() {
     play_file_non_blocking("tapping.wav");
 
     // open and close finger
-    for (int i = 0; i < 2; i++) {
+     while (ros::Time::now() - start_stamp < target) {
         mico->move_fingers(100, 5500);
         mico->move_fingers(5500, 5500);
     }
@@ -256,7 +252,7 @@ void MicoIdleBehavior::tap_fingers() {
     // raise hand up before finishing so that it does not collide with table
     p_target.pose.position.z += 0.1;
     p_target.pose.position.y += 0.1;
-    mico->move_to_pose_moveit(p_target);
+    mico->move_to_pose(p_target);
 }
 
 void MicoIdleBehavior::game_over() {

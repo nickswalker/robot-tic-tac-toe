@@ -13,6 +13,7 @@ IGNORE_EVENTS_LESS_THAN = 1
 class StateEstimator:
     def __init__(self, game_state_topic):
         self.state_change_event = Event()
+        self.should_shutdown = Event()
         self.should_listen_for_state = False
         self.observation_queue = Queue()
         self.state_estimate = None
@@ -26,9 +27,8 @@ class StateEstimator:
     def game_state_callback(self, msg):
         self.observation_queue.put(tuple(msg.board_state))
 
-
     def process_game_state(self):
-        while not rospy.is_shutdown():
+        while not rospy.is_shutdown() or self.should_shutdown.is_set():
             observation = self.observation_queue.get(True)
             if not self.should_listen_for_state:
                 continue

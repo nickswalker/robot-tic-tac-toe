@@ -56,6 +56,7 @@ int main(int argc, char **argv) {
     mico->move_fingers(5500, 5500); 
     geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     mico->move_to_pose_moveit(ready_pose);
+    int target_duration = 40;
 
     srand(time(0));
     while (ros::ok()) {
@@ -67,21 +68,21 @@ int main(int argc, char **argv) {
         // run the idle bahavior based on the current iteration
         if (behavior == 0) {
             ROS_INFO("Incremental");
-            idleBehavior.move_incremental(dest);
+            idleBehavior.move_incremental(dest, target_duration);
         } else if (behavior == 1 ) {
             ROS_INFO("Tap");
-            idleBehavior.tap_fingers();
+            idleBehavior.tap_fingers(target_duration);
         } else if (behavior == 2) {
             ROS_INFO("Scratch");
-            idleBehavior.scratch_chin();
+            idleBehavior.scratch_chin(target_duration);
         } else if (behavior == 3) {
             ROS_INFO("Exaggerate");
-            idleBehavior.move_exaggerated();
+            idleBehavior.move_exaggerated(target_duration);
         }
 
         // move to grid coordinate
         ROS_INFO("Moving to grid square %d.", dest);
-        idleBehavior.point(dest);
+        idleBehavior.point(dest, 10);
 
         // move back home
         pressEnter("Press [Enter] to move arm back to ready position.");

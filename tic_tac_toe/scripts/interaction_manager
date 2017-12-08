@@ -6,65 +6,42 @@ from tic_tac_toe.msg import GameState
 from tic_tac_toe.srv import ExecuteGameAction
 from tic_tac_toe import state_estimation
 
-RED = 1
-BLUE = 2
+from tic_tac_toe.game_state_utils import *
 
-def state_difference(state, state_prime):
-    diff = []
-    for i in range(len(state)):
-        if state[i] != state_prime[i]:
-            diff.append(state_prime[i])
+import datetime
+
+def play_game():
+    state_estimator.should_listen_for_state = True
+    last_state = None
+    while not rospy.is_shutdown():
+        # Detect change
+        state_estimator.state_change_event.wait()
+        state_estimator.should_listen_for_state = False
+        state = state_estimator.state_estimate
+        if last_state is not None:
+            valid = is_valid_transition(last_state, state) or is_two_step_transition(last_state, state)
+            if not valid:
+                # Reject the transition
+                state_estimator.should_listen_for_state = True
+                continue
+
+        last_state = state
+        current_turn = whose_turn_is_it(state, first_piece_type)
+        if current_turn == robot_color:
+            # Calculate move
+            move = tic_tac_toe.game_agent.getMove(state, robot_color)
+            action_start = datetime.datetime.now()
+            continue_game = executor(move)
+            delta = datetime.datetime.now() - action_start
+            print(delta.total_seconds())
+            # If game is done, end          
+            if move == -1:
+                print("game done")
+                break
         else:
-            diff.append(0)
-    return diff
+            rospy.loginfo("Detected my own move")
 
-def num_pieces_changed(diff):
-    # Count non-zero
-    return sum([1 for item in diff if item != 0])
-
-def who_played(state, state_prime):
-    if is_valid_transition(state, state_prime):
-        diff = state_difference(state, state_prime)
-        # What is the type of the one piece that changed?
-        changed = [item for item in diff if item != 0]
-        return changed[0]
-
-def count_piece_types(state):
-    type_counts = {RED: 0, BLUE: 0, 0: 0}
-    for item in state:
-        type_counts[item] = type_counts[item] + 1
-    return type_counts
-
-def count_pieces(state):
-    return sum([1 for item in state if item != 0])
-
-def whose_turn_is_it(state, first_piece_type):
-    if not is_valid(state):
-        return None
-    type_counts = count_piece_types(state)
-    #second_player = RED if first_piece_type == BLUE else BLUE
-    #type_counts[second_player] = type_counts[second_player] + 1
-    if type_counts[RED] > type_counts[BLUE]:
-        return BLUE
-    elif type_counts[RED] < type_counts[BLUE]:
-        return RED
-    elif type_counts[RED] == type_counts[BLUE]:
-        return first_piece_type
-    else:
-        return None
-
-def is_valid(state):
-    type_counts = count_piece_types(state)
-    piece_delta = abs(type_counts[RED] - type_counts[BLUE])
-    if piece_delta > 1:
-        return False
-    return True
-
-
-def is_valid_transition(state, state_prime):
-    changed = num_pieces_changed(state_difference(state, state_prime))
-    num_new = count_pieces(state_prime) - count_pieces(state)
-    return changed == 1 and num_new == 1
+        state_estimator.should_listen_for_state = True
 
 if __name__ == "__main__":
     rospy.init_node("interaction_manager")
@@ -83,39 +60,19 @@ if __name__ == "__main__":
     executor = rospy.ServiceProxy('execute_game_action', ExecuteGameAction)
     state_estimator = state_estimation.StateEstimator("game_state")
     robot_color = rospy.get_param("~/robots_color", RED)
-    opponent_color = BLUE if robot_color is RED else RED
     robot_plays_first = rospy.get_param("~/robot_goes_first", False)
+
+    opponent_color = BLUE if robot_color is RED else RED
     first_piece_type = robot_color if robot_plays_first else opponent_color
-    rospy.loginfo("Ready")
-    rospy.loginfo("Press enter to begin")
-    _ = raw_input()
-    state_estimator.should_listen_for_state = True
-    last_state = None
+
     while not rospy.is_shutdown():
-        # Detect change
-        state_estimator.state_change_event.wait()
-        state_estimator.should_listen_for_state = False
-        state = state_estimator.state_estimate
-        if last_state is not None:
-            valid = is_valid_transition(last_state, state)
-            if not valid:
-                # Reject the transition
-                state_estimator.should_listen_for_state = True
-                continue
+        rospy.loginfo("Ready")
+        rospy.loginfo("Press enter to begin")
+        _ = raw_input()
+        start_time = datetime.datetime.now()
+        play_game()
+        duration = datetime.datetime.now() - start_time
+        print(duration.total_seconds())
 
-        last_state = state
-        current_turn = whose_turn_is_it(state, first_piece_type)
-        rospy.loginfo(current_turn)
-        if current_turn == robot_color:
-            # Calculate move
-            move = tic_tac_toe.game_agent.getMove(state, robot_color)
-            continue_game = executor(move)
-            
-            # If game is done, end          
-            if continue_game == False:
-                print("game done")
-                break
-        else:
-            rospy.loginfo("Detected my own move")
-
-        state_estimator.should_listen_for_state = True
+    state_estimator.should_shutdown.set()
+    

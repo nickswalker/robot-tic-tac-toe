@@ -15,13 +15,17 @@
 #include <tic_tac_toe/utils.h>
 #include <tic_tac_toe/MicoIdleBehavior.h>
 
+using namespace std;
+
 MicoManager *mico;
 MicoIdleBehavior* idleBehavior;
 
+int target_duration = 25;
 //true if Ctrl-C is pressed
 bool g_caught_sigint = false;
 
-bool used_behaviors[4] = {}; // keeps track of random behaviors that have been chosen
+vector<int> sequence;
+int current_behavior_index = 0;
 
 bool run_idle_behaviors = true; // Whether to add idle behaviors, true = add idle behaviors
 
@@ -53,34 +57,28 @@ void pressEnter(std::string message) {
 
 bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
                 tic_tac_toe::ExecuteGameAction::Response &res) {
-    printf("Received a new message, req.action_location = %d\n", req.action_location);
+    printf("Received a new request, req.action_location = %d\n", req.action_location);
 
     if(req.action_location == -1){ // human has won already, or game is scratch
       idleBehavior->game_over();
-      return false;
+      current_behavior_index = 0;
+      return true;
     }
 
     if(run_idle_behaviors){
-        // choose a random behavior that has not been encountered yet
-        uint32_t behavior;
-        do{
-          behavior = rand() % 4;
-        } while(used_behaviors[behavior] == true);
-        used_behaviors[behavior] = true;
-
+       int behavior = sequence[current_behavior_index];
+       current_behavior_index += 1;
+       current_behavior_index %= sequence.size();
        // run chosen idle behavior
        if (behavior == 0) {
-           ROS_INFO("Incremental");
-           idleBehavior->move_incremental(req.action_location);
+           idleBehavior->move_incremental(req.action_location, target_duration);
        } else if (behavior == 1 ) {
            ROS_INFO("Tap");
-           idleBehavior->tap_fingers();
+           idleBehavior->tap_fingers(target_duration);
        } else if (behavior == 2) {
-           ROS_INFO("Scratch");
-           idleBehavior->scratch_chin();
+           idleBehavior->scratch_chin(target_duration);
        } else if (behavior == 3) {
-           ROS_INFO("Exaggerate");
-           idleBehavior->move_exaggerated();
+           idleBehavior->move_exaggerated(target_duration);
        }
     }
     else{
@@ -90,13 +88,12 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
 
     // move to grid coordinate
     ROS_INFO("Moving to grid square %d.", req.action_location);
-    idleBehavior->point(req.action_location);
+    idleBehavior->point(req.action_location, 10);
 
     // move back to ready position
     geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     mico->move_to_pose_moveit(ready_pose);
 
-    ROS_INFO("Spinning, waiting for input on server");
     return true;
 }
 
@@ -114,6 +111,7 @@ int main(int argc, char **argv) {
     //register ctrl-c
     signal(SIGINT, sig_handler);
 
+    ROS_INFO("Waiting for the arm to be ready");
     mico->wait_for_data();
 
     bool success = ph.getParam("use_idle_behaviors", run_idle_behaviors);
@@ -121,15 +119,15 @@ int main(int argc, char **argv) {
         ROS_ERROR("Pass the use_idle_behaviors parameter");        
         exit(1);
     }
+
+    success = ph.getParam("idle_behavior_sequence", sequence);
     ROS_INFO("use_idle_behaviors is %s", run_idle_behaviors ? "true" : "false");
     // close hand and move to ready position
     ROS_INFO("Closing hand and moving to ready position.");
-    mico->move_fingers(5500, 5500);
+    mico->close_hand();
     geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     mico->move_to_pose_moveit(ready_pose);
 
-    // set random seed
-    srand(time(0));
 
     // never returns
     ROS_INFO("Spinning, waiting for input on server");
