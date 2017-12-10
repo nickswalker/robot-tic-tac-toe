@@ -6,22 +6,15 @@
 #include <opencv2/features2d/features2d.hpp>
 
 struct Piece;
-using namespace cv;
-using namespace std;
 
 class GameStateDetector {
-    SimpleBlobDetector blobDetector;
+    cv::SimpleBlobDetector blobDetector;
     bool showDetections;;
 
 public:
-
-    bool lastObservedWasValid;
-    int lastObservedState[9];
-
-    GameStateDetector(bool showDetections = false): showDetections(showDetections), lastObservedWasValid(false),
-                                                    lastObservedState() {
+    GameStateDetector(bool showDetections = false): showDetections(showDetections){
         // Setup SimpleBlobDetector parameters.
-        SimpleBlobDetector::Params params;
+        cv::SimpleBlobDetector::Params params;
 
         params.filterByColor = true;
         params.blobColor = 255;
@@ -39,13 +32,15 @@ public:
         params.filterByInertia = true;
         params.minInertiaRatio = 0.01;
 
-        blobDetector = SimpleBlobDetector(params);
+        blobDetector = cv::SimpleBlobDetector(params);
     }
 
-    void detect(const Mat &img);
+    bool detect(const cv::Mat &img, int state[]);
+    bool detect_on_board(const cv::Mat &img, const std::vector<cv::RotatedRect> &board, int result[]);
+    bool detect_board(const cv::Mat &img, std::vector<cv::RotatedRect> &board);
 
 
-    void assignPiecesToCells(vector<Piece> pieces, vector<RotatedRect> cells, int *dest);
+    void assignPiecesToCells(std::vector<Piece> pieces, std::vector<cv::RotatedRect> cells, int dest[]);
 };
 
 

@@ -44,7 +44,7 @@ void drawLines(Mat &img, vector<Vec2f> &lines) {
     }
 }
 
-void drawGrid(Mat &img, vector<RotatedRect> &cells){
+void drawGrid(Mat &img, const vector<RotatedRect> &cells){
     for (vector<RotatedRect>::const_iterator i = cells.begin(); i < cells.end(); ++i) {
         const RotatedRect &cell = *i;
         Point2f vertices[4];
@@ -54,7 +54,7 @@ void drawGrid(Mat &img, vector<RotatedRect> &cells){
     }
 }
 
-void drawPieces(Mat &img, vector<Piece> pieces) {
+void drawPieces(Mat &img, const vector<Piece> pieces) {
     for(vector<Piece>::const_iterator i = pieces.begin(); i < pieces.end(); ++i) {
         Scalar color = i->team == RED ? Scalar(255, 0, 255) : Scalar(255, 255, 0);
         circle(img, i->center, 5, color, 2);

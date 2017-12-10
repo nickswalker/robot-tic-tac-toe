@@ -71,7 +71,14 @@ vector<Point> extractGridContour(vector<vector<Point> > contours, vector<Vec4i> 
     double largest_yet = 0;
     for(int i = 0; i < contours.size(); i++) {
         double area = areas[i];
+        Point2f center = mc[i];
+        double x = center.x;
+        double y = center.y;
+        // Filter out implausible sizes, locations
         if (area < 1500. || area > 4000) continue;
+        //if (x < 100 || 500 < x || y < 300) continue;
+        RotatedRect boundingBox = minAreaRect(contours[i]);
+        if (90 < boundingBox.angle || boundingBox.angle < -90) continue;
         if (area > largest_yet) {
             result = contours[i];
             largest_yet = area;

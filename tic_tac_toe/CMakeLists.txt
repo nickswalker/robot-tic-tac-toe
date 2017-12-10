@@ -38,6 +38,7 @@ add_message_files(
 
 add_service_files(
    FILES
+        DetectBoard.srv
    ExecuteGameAction.srv
 )
 generate_messages(

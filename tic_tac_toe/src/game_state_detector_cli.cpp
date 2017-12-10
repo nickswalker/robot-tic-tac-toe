@@ -7,6 +7,7 @@
 
 
 using namespace cv;
+using namespace std;
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "game_state_detector");
@@ -19,14 +20,15 @@ int main(int argc, char **argv) {
         cerr << "Couldn't load image from " << path << "." << endl;
         exit(1);
     }
-    detector.detect(img);
-    if (!detector.lastObservedWasValid) {
+    int result[9];
+    bool success = detector.detect(img, result);
+    if (!success) {
         cerr << "Couldn't detect state" << endl;
         exit(2);
     }
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
-            cout << " " << detector.lastObservedState[i * 3 + j];
+            cout << " " << result[i * 3 + j];
         }
         cout << endl;
     }

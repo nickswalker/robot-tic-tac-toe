@@ -6,7 +6,7 @@
 using namespace cv;
 using namespace std;
 
-void GameStateDetector::assignPiecesToCells(vector<Piece> pieces, vector<RotatedRect> cells, int *dest) {
+void GameStateDetector::assignPiecesToCells(vector<Piece> pieces, vector<RotatedRect> cells, int dest[]) {
     memset(dest,0,9 * sizeof(int));
     Point2f vertices[4];
     for (int i = 0; i < pieces.size(); i++) {
@@ -24,13 +24,13 @@ void GameStateDetector::assignPiecesToCells(vector<Piece> pieces, vector<Rotated
     }
 }
 
-void GameStateDetector::detect(const Mat &img) {
+bool GameStateDetector::detect(const Mat &img, int result[]) {
     vector<Piece> pieces = extractPieces(img, blobDetector);
 
     vector<RotatedRect> gridCells = extractGrid(img);
 
-    assignPiecesToCells(pieces, gridCells, lastObservedState);
-    lastObservedWasValid = true;
+    assignPiecesToCells(pieces, gridCells, result);
+
     if (showDetections) {
         Mat detections_img = img;
         drawPieces(detections_img, pieces);
@@ -38,4 +38,24 @@ void GameStateDetector::detect(const Mat &img) {
         imshow("detections_img", detections_img);
         waitKey(3);
     }
+    return true;
+}
+
+bool GameStateDetector::detect_board(const Mat &img, vector<RotatedRect> &board) {
+    vector<RotatedRect> gridCells = extractGrid(img);
+    board.insert(board.begin(), gridCells.begin(), gridCells.end());
+    return !board.empty();
+}
+
+bool GameStateDetector::detect_on_board(const Mat &img, const vector<RotatedRect> &board, int result[]) {
+    vector<Piece> pieces = extractPieces(img, blobDetector);
+    assignPiecesToCells(pieces, board, result);
+    if (showDetections) {
+        Mat detections_img = img;
+        drawPieces(detections_img, pieces);
+        drawGrid(detections_img, board);
+        imshow("detections_img", detections_img);
+        waitKey(3);
+    }
+    return true;
 }
