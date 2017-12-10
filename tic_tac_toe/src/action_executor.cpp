@@ -20,7 +20,7 @@ using namespace std;
 MicoManager *mico;
 MicoIdleBehavior* idleBehavior;
 
-int target_duration = 25;
+int target_duration = 15;
 //true if Ctrl-C is pressed
 bool g_caught_sigint = false;
 
@@ -62,10 +62,13 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
     if(req.action_location == -1){ // human has won already, or game is scratch
       idleBehavior->game_over();
       current_behavior_index = 0;
+      mico->move_home();
       return true;
     }
 
     if(run_idle_behaviors){
+       play_file_non_blocking("thinking.wav");
+       ros::Duration(10).sleep();
        int behavior = sequence[current_behavior_index];
        current_behavior_index += 1;
        current_behavior_index %= sequence.size();
@@ -83,7 +86,7 @@ bool execute_cb(tic_tac_toe::ExecuteGameAction::Request &req,
     }
     else{
       play_file_non_blocking("thinking.wav");
-      sleep(5);
+      ros::Duration(target_duration + 5).sleep();
     }
 
     // move to grid coordinate
@@ -124,13 +127,13 @@ int main(int argc, char **argv) {
     ROS_INFO("use_idle_behaviors is %s", run_idle_behaviors ? "true" : "false");
     // close hand and move to ready position
     ROS_INFO("Closing hand and moving to ready position.");
-    mico->close_hand();
+    mico->move_fingers(5500);
     geometry_msgs::PoseStamped ready_pose = get_ready_pose();
     mico->move_to_pose_moveit(ready_pose);
 
 
     // never returns
-    ROS_INFO("Spinning, waiting for input on server");
+    ROS_INFO("Press enter to begin. Then waits for input on server");
     ros::spin();
 
     // shutdown

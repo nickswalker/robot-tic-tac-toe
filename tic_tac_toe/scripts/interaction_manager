@@ -40,7 +40,10 @@ def play_game():
                 break
         else:
             rospy.loginfo("Detected my own move")
-
+            # Have I already won?
+            if tic_tac_toe.game_agent.isWinner(state, robot_color):
+                executor(-1)
+                break
         state_estimator.should_listen_for_state = True
 
 if __name__ == "__main__":

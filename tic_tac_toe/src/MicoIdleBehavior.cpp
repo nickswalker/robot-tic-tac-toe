@@ -153,6 +153,7 @@ void MicoIdleBehavior::scratch_chin(int target_duration) {
         mico->move_fingers(100, 100);
         mico->move_fingers(5500, 5500);
     }
+    mico->close_hand();
 }
 
 void MicoIdleBehavior::move_incremental(int dest, int target_duration) {
@@ -199,7 +200,7 @@ void MicoIdleBehavior::move_incremental(int dest, int target_duration) {
         ros::Duration(.75).sleep();
         msg.joint5 = -20;
         mico->move_with_angular_velocities(msg, 1.25);
-
+        ros::Duration(.75).sleep();
     }
 
 }
@@ -217,7 +218,7 @@ void MicoIdleBehavior::move_exaggerated(int target_duration) {
     msg.joint6 = 45;
     mico->move_with_angular_velocities(msg, 8);
 
-    play_file_non_blocking("stretch.wav");
+    //play_file_non_blocking("stretch.wav");
 
     mico->move_fingers(500, 500);
     while (ros::Time::now() - start_stamp < target) {
@@ -225,7 +226,7 @@ void MicoIdleBehavior::move_exaggerated(int target_duration) {
         mico->move_fingers(500, 1000);
         mico->move_fingers(1000, 500);
     }
-    mico->close_hand();
+    mico->move_fingers(5500, 5500);
 
 }
 

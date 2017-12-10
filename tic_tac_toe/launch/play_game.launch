@@ -8,7 +8,7 @@
     <node name="game_state_detector" pkg="tic_tac_toe" type="game_state_detector" required="true">
 rloc        <param unless="$(arg simulation)" name="camera_topic" value="/xtion_camera/rgb/image_rect_color" />
     </node>
-    <node name="action_executor" pkg="tic_tac_toe" type="action_executor" required="true" output="screen">
+    <node name="action_executor" pkg="tic_tac_toe" type="action_executor" required="true">
         <param name="simulation" value="$(arg simulation)" />
         <param name="use_idle_behaviors" value="$(arg use_idle_behaviors)" />
         <rosparam param="idle_behavior_sequence">[0, 1, 2, 3, 2, 3, 1, 0]</rosparam>
