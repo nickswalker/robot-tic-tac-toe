@@ -1,6 +1,8 @@
 #!/usr//bin/env python
 import pickle
 from matplotlib import rcParams
+from matplotlib.backends.backend_pdf import PdfPages
+
 rcParams['font.family'] = 'serif'
 #rcParams['font.serif'] = ['DejuVu Serif']
 import matplotlib.pyplot as plt
@@ -13,15 +15,16 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from plotting_utils import Plot
 import pandas
 import sys
+import os
 
 params = {'backend': 'ps',
-          'axes.labelsize': 2,
+          'axes.labelsize': 10,
           'font.size': 14,
           'font.weight': "bold",
           'legend.fontsize': 6,
           'xtick.labelsize': 6,
           'ytick.labelsize': 6,
-
+          'figure.figsize': [1024, 300],
           'figure.titleweight': "bold",
 
           }
@@ -107,8 +110,10 @@ def main():
 
         treatment_data = treatment_composites[measure]
         control_data = control_composites[measure]
+        treatment_mean, treatment_std, _ = treatment_desc[measure]
+        control_mean, control_std, _ = control_desc[measure]
         stat, p = scipy.stats.ttest_ind(treatment_data, control_data)
-        print("{}: {}".format(measure, p))
+        print("{}: control: mu={:.3f} sigma={:.3f} treatment: mu={:.3f} sigma={:.3f} Same with p={:.3f}".format(measure, control_mean, control_std, treatment_mean, treatment_std, p))
 
     names = MEASURES.keys()
     N = len(names)
@@ -121,23 +126,23 @@ def main():
     for i in range(N):
         plt.subplot(1, N, i + 1)
         width = 0.50       # the width of the bars
-        padding = .15
+        padding = .2
         fig = plt.gcf()
         ax = plt.gca()
         plt.margins(padding, 0)
         plt.tight_layout(pad=1, w_pad=0.1, h_pad=.1)
-        rects1 = ax.bar(padding, control_means[i], width, color=(.25, .30, .35), yerr=control_std[i], linewidth=0, ecolor='black')
-        rects2 = ax.bar(padding + width + padding, treatment_means[i], width, color=(.26, .65, .96), yerr=treatment_std[i], linewidth=0, ecolor='black')
-
+        rects1 = ax.bar(padding, control_means[i], width, color=(.25, .30, .35), yerr=control_std[i], linewidth=0, ecolor='black', capsize=4, error_kw={"elinewidth": 1.25})
+        rects2 = ax.bar(padding + width + padding, treatment_means[i], width, color=(.26, .65, .96), yerr=treatment_std[i], linewidth=0, ecolor='black',capsize=4, error_kw={"elinewidth": 1.25})
+        [sp.set_linewidth(1.25) for sp in ax.spines.itervalues()]
         # add some text for labels, title and axes ticks
-        ax.set_ylabel(names[i])
+        ax.set_ylabel(names[i].capitalize(), fontsize=14)
         #ax.set_title(names[i])
         ax.set_xticks([padding + width / 2, 2 * padding + width + width / 2])
         ax.set_ylim([1, 7])
-        ax.set_xticklabels(["Absent", "Present"])
+        ax.set_xticklabels(["$\mathregular{\mathit{Absent}}$", "$\mathregular{\mathit{Present}}$"])
         plt.minorticks_on()
         ax.yaxis.set_minor_locator(minorLocator)
-        ax.tick_params(direction="out", which="both", width=1.5)
+        ax.tick_params(direction="out", which="both", width=1.25)
         ax.tick_params(which="minor", length=5)
         ax.tick_params(which="major", length=10)
         #ax.tick_params(which="minor", axis="y", length=5)
@@ -147,6 +152,13 @@ def main():
 
 
     plt.show()
+    plt.tight_layout()
+    full_out = os.path.join("responses.pdf")
+    pdf = PdfPages(full_out)
+
+    pdf.savefig()
+
+    pdf.close()
 
 
 if __name__ == "__main__":
