@@ -44,11 +44,13 @@ LIKEABILITY = "likability"
 ANIMACY = "animacy"
 ABILITY = "ability"
 SPEED = "speed"
+TACTIC = "tactic"
 RESPONSIVENESS = "responsiveness"
 MEASURES = {INTELLIGENCE: ["QID2_2", "QID2_7", "QID2_11", "QID2_15", "QID2_17"],
             LIKEABILITY: ["QID2_1", "QID2_4", "QID2_9", "QID2_13", "QID2_16"],
             ANIMACY: ["QID2_3", "QID2_6", "QID2_8", "QID2_10", "QID2_12", "QID2_14"],
-            ABILITY: ["QID1_1", "QID1_3", "QID1_4", "QID1_5", "QID1_6"],
+            ABILITY: ["QID1_1", "QID1_3", "QID1_4"],
+            TACTIC: ["QID1_5", "QID1_6"],
             RESPONSIVENESS: ["QID1_2"],
             SPEED: ["QID2_5"]}
 
@@ -77,7 +79,7 @@ def mean_std(data):
 def cronbach(itemscores):
     itemvars = itemscores.var(axis=1, ddof=1)
     tscores = itemscores.sum(axis=0)
-    nitems = len(itemscores)
+    nitems = float(len(itemscores))
     return nitems / (nitems-1) * (1 - itemvars.sum() / tscores.var(ddof=1))
 
 
@@ -95,7 +97,7 @@ def main():
         if len(components) < 2:
             continue
         alpha = cronbach(data[components].T.astype("float32"))
-        print("{} alpha={}".format(measure, alpha))
+        print("{} alpha={:.2f}".format(measure, alpha))
 
     treatment_data = data[data["QID5"] == treatment_group]
     control_data = data[data["QID5"] == control_group]
@@ -113,7 +115,7 @@ def main():
         treatment_mean, treatment_std, _ = treatment_desc[measure]
         control_mean, control_std, _ = control_desc[measure]
         stat, p = scipy.stats.ttest_ind(treatment_data, control_data)
-        print("{}: control: mu={:.3f} sigma={:.3f} treatment: mu={:.3f} sigma={:.3f} Same with p={:.3f}".format(measure, control_mean, control_std, treatment_mean, treatment_std, p))
+        print("{}: control: mu={:.2f} sigma={:.2f} treatment: mu={:.2f} sigma={:.2f} Same with p={:.2f}".format(measure, control_mean, control_std, treatment_mean, treatment_std, p))
 
     names = MEASURES.keys()
     N = len(names)
