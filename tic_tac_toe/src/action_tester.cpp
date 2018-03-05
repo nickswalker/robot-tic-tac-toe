@@ -4,7 +4,7 @@
 #include <tic_tac_toe/MicoIdleBehavior.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <segbot_arm_manipulation/MicoManager.h>
+#include <segbot_arm_manipulation/Mico.h>
 #include <signal.h>
 #include <tic_tac_toe/utils.h>
 
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "action_executor");
     ros::NodeHandle n;
     //create subscribers for arm topics
-    MicoManager *mico = new MicoManager(n);
+    auto *mico = new segbot_arm_manipulation::Mico(n);
     MicoIdleBehavior idleBehavior(mico);
     //register ctrl-c
     signal(SIGINT, sig_handler);

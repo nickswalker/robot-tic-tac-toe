@@ -6,6 +6,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <tic_tac_toe/GameStateDetector.h>
 #include <tic_tac_toe/DetectBoard.h>
+using namespace std;
 using namespace cv;
 
 GameStateDetector *detector;

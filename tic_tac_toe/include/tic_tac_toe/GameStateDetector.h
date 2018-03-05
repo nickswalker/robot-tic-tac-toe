@@ -8,7 +8,7 @@
 struct Piece;
 
 class GameStateDetector {
-    cv::SimpleBlobDetector blobDetector;
+    cv::Ptr<cv::SimpleBlobDetector> blobDetector;
     bool showDetections;;
 
 public:
@@ -31,8 +31,7 @@ public:
 
         params.filterByInertia = true;
         params.minInertiaRatio = 0.01;
-
-        blobDetector = cv::SimpleBlobDetector(params);
+        blobDetector = cv::SimpleBlobDetector::create(params);
     }
 
     bool detect(const cv::Mat &img, int state[]);

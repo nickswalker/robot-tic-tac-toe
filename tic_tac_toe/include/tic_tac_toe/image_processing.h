@@ -210,7 +210,7 @@ vector<RotatedRect> produceGrid(RotatedRect &boundingBox) {
     return result;
 }
 
-vector<Piece> extractPieces(const Mat &img, SimpleBlobDetector &blobDetector) {
+vector<Piece> extractPieces(const Mat &img, Ptr<SimpleBlobDetector> &blobDetector) {
     Mat hsv, red, blue, grid, mask;
     cvtColor(img, hsv, CV_BGR2HSV);
     inRange(hsv, Scalar(160, 50, 50), Scalar(180, 255, 255), mask);
@@ -234,8 +234,8 @@ vector<Piece> extractPieces(const Mat &img, SimpleBlobDetector &blobDetector) {
     vector<KeyPoint> blue_keypoints;
 
     // Detect blobs
-    blobDetector.detect(red, red_keypoints);
-    blobDetector.detect(blue, blue_keypoints);
+    blobDetector->detect(red, red_keypoints);
+    blobDetector->detect(blue, blue_keypoints);
 
     vector<Piece> pieces;
     for(vector<KeyPoint>::const_iterator i = red_keypoints.begin(); i < red_keypoints.end(); ++i){

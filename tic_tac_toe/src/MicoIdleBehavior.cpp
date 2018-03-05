@@ -1,7 +1,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <kinova_msgs/JointAngles.h>
 #include <tic_tac_toe/MicoIdleBehavior.h>
-#include <segbot_arm_manipulation/MicoManager.h>
+#include <segbot_arm_manipulation/Mico.h>
 #include <tic_tac_toe/sound.h>
 #include <tic_tac_toe/utils.h>
 #include <unistd.h>

@@ -14,7 +14,8 @@
   <depend>rospy</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>moveit_utils</depend>
+  <depend>bwi_moveit_utils</depend>
+  <depend>bwi_perception</depend>
   <depend>segbot_arm_manipulation</depend>
 
 

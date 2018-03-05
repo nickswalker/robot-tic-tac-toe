@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(tic_tac_toe)
 
+add_compile_options(-std=c++11)
+
 find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   actionlib
   bwi_msgs
+  bwi_moveit_utils
+  bwi_perception
   cv_bridge
   geometry_msgs
   kinova_msgs
@@ -16,10 +20,8 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_msgs
   move_base_msgs
   moveit_ros_planning_interface
-  moveit_utils
   nav_msgs
   segbot_arm_manipulation
-  segbot_arm_perception
   sensor_msgs
   std_msgs
   tf

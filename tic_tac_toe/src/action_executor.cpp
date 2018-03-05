@@ -11,13 +11,13 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <kinova_msgs/FingerPosition.h>
 
-#include <segbot_arm_manipulation/MicoManager.h>
+#include <segbot_arm_manipulation/Mico.h>
 #include <tic_tac_toe/utils.h>
 #include <tic_tac_toe/MicoIdleBehavior.h>
 
 using namespace std;
 
-MicoManager *mico;
+segbot_arm_manipulation::Mico *mico;
 MicoIdleBehavior* idleBehavior;
 
 int target_duration = 15;
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
     ros::ServiceServer service = n.advertiseService("execute_game_action", execute_cb);
 
     //create subscribers for arm topics
-    mico = new MicoManager(n);
+    mico = new segbot_arm_manipulation::Mico(n);
     idleBehavior = new MicoIdleBehavior(mico);
     //register ctrl-c
     signal(SIGINT, sig_handler);
