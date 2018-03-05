@@ -46,7 +46,8 @@ bool notVerticalHorizontal(Vec2f &line) {
 }
 
 
-vector<Point> extractGridContour(vector<vector<Point> > contours, vector<Vec4i> hierarchy) {
+vector<Point> extractGridContour(vector<vector<Point> > contours, vector<Vec4i> hierarchy, uint min_area = 1500,
+                                 uint max_area = 4000) {
     // Get the moments
     vector<Moments> mu(contours.size());
     for(int i = 0; i < contours.size(); i++) {
@@ -75,10 +76,22 @@ vector<Point> extractGridContour(vector<vector<Point> > contours, vector<Vec4i> 
         double x = center.x;
         double y = center.y;
         // Filter out implausible sizes, locations
-        if (area < 1500. || area > 4000) continue;
-        //if (x < 100 || 500 < x || y < 300) continue;
+        if (area < min_area || max_area > max_area) continue;
         RotatedRect boundingBox = minAreaRect(contours[i]);
         if (90 < boundingBox.angle || boundingBox.angle < -90) continue;
+        vector<Point> approx;
+        double error_factor = 0.01;
+        while (error_factor < .05) {
+            approxPolyDP(Mat(contours[i]), approx,
+                         arcLength(Mat(contours[i]), true) * error_factor, true);
+            if (approx.size() == 4) {
+                break;
+            }
+            error_factor += 0.01;
+        }
+        if (approx.size() != 4) {
+            continue;
+        }
         if (area > largest_yet) {
             result = contours[i];
             largest_yet = area;
@@ -211,22 +224,22 @@ vector<RotatedRect> produceGrid(RotatedRect &boundingBox) {
 }
 
 vector<Piece> extractPieces(const Mat &img, Ptr<SimpleBlobDetector> &blobDetector) {
-    Mat hsv, red, blue, grid, mask;
+    Mat hsv, color_one, color_two, grid;
     cvtColor(img, hsv, CV_BGR2HSV);
-    inRange(hsv, Scalar(160, 50, 50), Scalar(180, 255, 255), mask);
-    inRange(hsv, Scalar(0, 50, 50), Scalar(20, 255, 255), red);
-    red |= mask;
-    inRange(hsv, Scalar(100, 50, 50), Scalar(125, 255, 255), blue);
+    // Slice out a lot of colors we don't need
+    // Don't forget that this is HSV
+    inRange(hsv, Scalar(160, 50, 50), Scalar(180, 255, 255), color_one);
+    inRange(hsv, Scalar(80, 50, 50), Scalar(120, 255, 255), color_two);
 
-    filterChannel(red, red);
-    filterChannel(blue, blue);
+    filterChannel(color_one, color_one);
+    filterChannel(color_two, color_two);
 
 #ifdef DEBUG
     Mat display;
-    cvtColor(red, display, CV_GRAY2BGR);
+    cvtColor(color_one, display, CV_GRAY2BGR);
     imshow("red_channel", display);
-    cvtColor(blue, display, CV_GRAY2BGR);
-    imshow("blue_channel", display);
+    cvtColor(color_two, display, CV_GRAY2BGR);
+    imshow("green_channel", display);
     waitKey(3);
 #endif
     // Storage for blobs
@@ -234,8 +247,8 @@ vector<Piece> extractPieces(const Mat &img, Ptr<SimpleBlobDetector> &blobDetecto
     vector<KeyPoint> blue_keypoints;
 
     // Detect blobs
-    blobDetector->detect(red, red_keypoints);
-    blobDetector->detect(blue, blue_keypoints);
+    blobDetector->detect(color_one, red_keypoints);
+    blobDetector->detect(color_two, blue_keypoints);
 
     vector<Piece> pieces;
     for(vector<KeyPoint>::const_iterator i = red_keypoints.begin(); i < red_keypoints.end(); ++i){
@@ -272,13 +285,15 @@ vector<RotatedRect> extractGrid(const Mat &img) {
     /// Find contours
     findContours(edge, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
-    vector<Point> gridContour = extractGridContour(contours, hierarchy);
+    auto image_area = img.rows * img.cols;
+    vector<Point> gridContour = extractGridContour(contours, hierarchy, image_area * 0.001, image_area * .01);
     if (gridContour.empty()) {
         return vector<RotatedRect>();
     }
 #ifdef DEBUG
     //drawContours(detections_img, contours, hierarchy);
     polylines(display, gridContour, false, Scalar(0,255,0));
+    imshow("contour", display);
 #endif
 
     // Get oriented bounding box

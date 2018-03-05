@@ -5,6 +5,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
 
+#define IMAGE_AREA 1920 * 1080
+
 struct Piece;
 
 class GameStateDetector {
@@ -20,11 +22,11 @@ public:
         params.blobColor = 255;
 
         params.filterByArea = true;
-        params.minArea = 150;
-        params.maxArea = 1500;
+        params.minArea = IMAGE_AREA * 0.001;
+        params.maxArea = IMAGE_AREA * 0.01;
 
-        params.filterByCircularity = true;
-        params.minCircularity = 0.1;
+        params.filterByCircularity = false;
+        params.minCircularity = 0.01;
 
         params.filterByConvexity = true;
         params.minConvexity = 0.87;

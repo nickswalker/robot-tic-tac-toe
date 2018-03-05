@@ -75,8 +75,8 @@ int main(int argc, char **argv) {
             continue;
         }
         tic_tac_toe::GameState msg;
-        for (int i = 0; i < 9; i++) {
-            msg.board_state.push_back(lastState[i]);
+        for (int i : lastState) {
+            msg.board_state.push_back(i);
         }
 
         state_pub.publish(msg);
